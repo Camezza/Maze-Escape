@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 '''
-A class for management of 2d vectors
+    A class for management of 2d vectors
 '''
 @dataclass
 class vec2:
@@ -37,4 +37,15 @@ class line(ray):
         ray2_b = ray.start.y - (ray2_m * ray.start.x)
         x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
         y = (ray1_m * x) + ray1_b # sub x into original equation 
-        return vec2(x, y)
+
+        # Retreive the domains and ranges
+        x_min = min(self.start.x, self.finish.x, ray.start.x, ray.finish.x)
+        x_max = max(self.start.x, self.finish.x, ray.start.x, ray.finish.x)
+
+        y_min = min(self.start.y, self.finish.y, ray.start.y, ray.finish.y)
+        y_max = max(self.start.y, self.finish.y, ray.start.y, ray.finish.y)
+
+        # restrict to ray domain and range
+        if (x_min <= x and x <= x_max) and (y_min <= y and y <= y_max):
+            return vec2(x, y)
+        return None
