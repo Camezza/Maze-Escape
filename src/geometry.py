@@ -26,16 +26,18 @@ class ray:
     start: vec2   
     finish: vec2
 
+'''
+    A line ranging from point A to point B. Extends ray class
+'''
 class line(ray):
-    def retreiveIntercept(self, ray: ray):
+    def intercept(self, ray: ray):
         '''
             Simple line equation to find where rays intercept. y = mx + b
         '''
-
         ray1_m = (self.finish.x - self.start.x)/(self.finish.y - self.start.y) # gradient = (x_2-x_1)/(y_2-y_1)
         ray1_b = self.start.y - (ray1_m * self.start.x) # y - mx = vertical offset (can also use y2 and x2)
         ray2_m = (ray.finish.x - ray.start.x)/(ray.finish.y - ray.start.y)
         ray2_b = ray.start.y - (ray2_m * ray.start.x)
-
-
-        # retreive 
+        x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
+        y = (ray1_m * x) + ray1_b # sub x into original equation 
+        return vec2(x, y)
