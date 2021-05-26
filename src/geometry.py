@@ -10,20 +10,17 @@ class vec2:
     y: int
 
     def add(self, x: int, y: int):
-        self.x += x
-        self.y += y
+        return vec2(self.x + x, self.y + y)
 
     def subtract(self, x: int, y: int):
-        self.x -= x
-        self.y -= y
+        return vec2(self.x - x, self.y - y)
 
     def multiply(self, x: int, y: int):
-        self.x *= x
-        self.y *= y
+        return vec2(self.x * x, self.y * y)
 
 @dataclass
 class ray:
-    start: vec2   
+    start: vec2
     finish: vec2
 
 '''
