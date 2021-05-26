@@ -1,10 +1,10 @@
 import pygame, sys
 from pygame.locals import *
+from geometry import vec2, ray, line
 
 pygame.init()
 
 window = pygame.display.set_mode((400, 300)) # Initialise window
-pygame.display.set_caption('Hello World!') # Set the window title
 
 while True: # main game loop
     for event in pygame.event.get(): # Retreive all queued events. Must be ran to display a window
