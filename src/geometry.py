@@ -39,13 +39,26 @@ class line(ray):
         y = (ray1_m * x) + ray1_b # sub x into original equation 
 
         # Retreive the domains and ranges
-        x_min = min(self.start.x, self.finish.x, ray.start.x, ray.finish.x)
-        x_max = max(self.start.x, self.finish.x, ray.start.x, ray.finish.x)
+        ray1_x_min = min(self.start.x, self.finish.x)
+        ray1_x_max = max(self.start.x, self.finish.x)
 
-        y_min = min(self.start.y, self.finish.y, ray.start.y, ray.finish.y)
-        y_max = max(self.start.y, self.finish.y, ray.start.y, ray.finish.y)
+        ray1_y_min = min(self.start.y, self.finish.y)
+        ray1_y_max = max(self.start.y, self.finish.y)
+
+        ray2_x_min = min(ray.start.x, ray.finish.x)
+        ray2_x_max = max(ray.start.x, ray.finish.x)
+
+        ray2_y_min = min(ray.start.y, ray.finish.y)
+        ray2_y_max = max(ray.start.y, ray.finish.y)
+
+        # Determine if line intercepts between each ray's domain and range
+        ray1Domain: bool = (ray1_x_min <= x and x <= ray1_x_max)
+        ray2Domain: bool = (ray2_x_min <= x and x <= ray2_x_max)
+        ray1Range: bool = (ray1_y_min <= y and y <= ray1_y_max)
+        ray2Range: bool = (ray2_y_min <= y and y <= ray2_y_max)
 
         # restrict to ray domain and range
-        if (x_min <= x and x <= x_max) and (y_min <= y and y <= y_max):
+        if ray1Domain and ray2Domain and ray1Range and ray2Range:
             return vec2(x, y)
+
         return None
