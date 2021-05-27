@@ -1,7 +1,7 @@
-import pygame, sys
+import pygame
 from pygame.locals import *
 from geometry import vec2, line
-from entities import entity, player
+from entities import boundingbox, entity, player
 
 pygame.init()
 window = pygame.display.set_mode((1280, 720)) # Initialise window
@@ -19,7 +19,7 @@ walls = [
 '''
     Create the player
 '''
-player1 = player(vec2(100, 100))
+player1 = player(vec2(100, 100), boundingbox(10))
 entities = [
     player1
 ]
@@ -44,7 +44,7 @@ while True: # main game loop
     for entity in entities:
         entity.tick()
         
-    pygame.draw.circle(window, (255, 255, 63), (player1.position.x, player1.position.y), 10, width=0) # draw the player
+    pygame.draw.circle(window, (255, 255, 63), (player1.position.x, player1.position.y), player1.boundingbox.radius, width=0) # draw the player
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))
     

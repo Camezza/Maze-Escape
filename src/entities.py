@@ -3,8 +3,13 @@ from geometry import vec2, angle
 from world import FRICTION
 
 @dataclass
+class boundingbox:
+    radius: int
+
+@dataclass
 class entity:
     position: vec2
+    boundingbox: boundingbox
     velocity = vec2(0, 0)
 
     def applyVelocity(self):
