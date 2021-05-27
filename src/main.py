@@ -30,13 +30,13 @@ while True: # main game loop
 
     key = pygame.key.get_pressed()
     if key[pygame.K_a]:
-        player1.velocity.x -= 0.1
+        player1.velocity.x -= 0.02
     if key[pygame.K_d]:
-        player1.velocity.x += 0.1
+        player1.velocity.x += 0.02
     if key[pygame.K_w]:
-        player1.velocity.y -= 0.1
+        player1.velocity.y -= 0.02
     if key[pygame.K_s]:
-        player1.velocity.y += 0.1
+        player1.velocity.y += 0.02
 
     for wall in walls:
         pygame.draw.line(window, (255, 255, 255), (wall.start.x, wall.start.y), (wall.finish.x, wall.finish.y), width=1)

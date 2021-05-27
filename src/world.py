@@ -1,1 +1,1 @@
-FRICTION = 1.5
+FRICTION = 1.1
