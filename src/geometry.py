@@ -26,14 +26,16 @@ class angle:
     radians: float
 
     def add(self, radian: float):
-        self.radians += radian
-        if self.radians > (2 * PI): # larger than 360 (2 pi)
-            self.radians -= (2 * PI)
-
+        new = self.radians + radian
+        if new > (2 * PI): # larger than 360 (2 pi)
+            return new - (2 * PI)
+        return new
+        
     def subtract(self, radian: float):
-        self.radians -= radian
-        if self.radians < 0: # restrict angles less than 0 
-            self.radians = (2 * PI) + self.radians
+        new = self.radians - radian
+        if new < 0: # restrict angles less than 0 
+            return new + (2 * PI)
+        return new
 
 @dataclass
 class ray:
