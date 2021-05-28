@@ -52,13 +52,19 @@ while True: # main game loop
         
     pygame.draw.circle(window, (255, 255, 63), (player1.position.x, player1.position.y), player1.boundingbox.radius, width=0) # draw the player
 
-    render_distance = 20
-    render_amount = 30
+    render_distance = 200
+    render_amount = 100
 
-    for i in range(player1.yaw.subtract(player1.fov.radians/2).radians, player1.yaw.add(player1.fov.radians/2).radians, player1.fov.radians/render_amount):
-        view = player1.position.multiply(render_distance)
-        raycast = ray(player1.position, vec2(math.acos(view.x/render_distance), math.asin(view.y/render_distance)))
+    minimum = player1.yaw.subtract(player1.fov.radians/2).radians
+    maximum = player1.yaw.add(player1.fov.radians/2).radians
+    iterator = player1.fov.radians/render_amount
+
+    i = minimum
+    while (i < maximum): # won't work properly; radians loop after going below 0 or above 2pi, so numerical operators wont work
+        raycast = ray(player1.position, player1.position.add(math.sin(i) * render_distance, math.cos(i) * render_distance))
         pygame.draw.line(window, (255, 255, 30), (raycast.start.x, raycast.start.y), (raycast.finish.x, raycast.finish.y), width=1)
+        
+        i += iterator
 
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))
