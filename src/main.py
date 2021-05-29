@@ -3,9 +3,11 @@ import math
 from pygame.locals import *
 from geometry import vec2, ray, line, PI
 from entities import boundingbox, entity, player
+from interface import canvas
 
 pygame.init()
 window = pygame.display.set_mode((1280, 720)) # Initialise window
+minimap = canvas(vec2(50, 50), vec2(window.get_width(), window.get_height()), vec2(window.get_width()/2, window.get_height()/2))
 
 '''
     Create the environment
@@ -52,7 +54,7 @@ while True: # main game loop
         player1.yaw = player1.yaw.subtract(PI/180)
 
     for wall in walls:
-        pygame.draw.line(window, (255, 255, 255), (wall.start.x, wall.start.y), (wall.finish.x, wall.finish.y), width=1)
+        pygame.draw.line(window, (255, 255, 255), minimap.relative(wall.start).display(), minimap.relative(wall.finish).display(), width=5)
 
     for entity in entities:
         entity.tick()
