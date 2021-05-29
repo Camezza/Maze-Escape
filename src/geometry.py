@@ -1,9 +1,27 @@
+import math
 from dataclasses import dataclass
 from typing import List
 PI = 22/7
 '''
     A class for management of 2d vectors
 '''
+
+@dataclass
+class angle:
+    radians: float
+
+    def add(self, radian: float):
+        new = self.radians + radian
+        if new > (2 * PI): # larger than 360 (2 pi)
+            return angle(new - (2 * PI))
+        return angle(new)
+        
+    def subtract(self, radian: float):
+        new = self.radians - radian
+        if new < 0: # restrict angles less than 0 
+            return angle(new + (2 * PI))
+        return angle(new)
+
 @dataclass
 class vec2:
     x: int
@@ -21,21 +39,9 @@ class vec2:
     def divide(self, x: int, y: int):
         return vec2(self.x / x, self.y / y)
 
-@dataclass
-class angle:
-    radians: float
-
-    def add(self, radian: float):
-        new = self.radians + radian
-        if new > (2 * PI): # larger than 360 (2 pi)
-            return angle(new - (2 * PI))
-        return angle(new)
-        
-    def subtract(self, radian: float):
-        new = self.radians - radian
-        if new < 0: # restrict angles less than 0 
-            return angle(new + (2 * PI))
-        return angle(new)
+    def relative(self, angle: angle):
+        radius = ((self.x ** 2) + (self.y ** 2)) ** (1/2)
+        return vec2(math.sin(angle.radians) * radius, math.cos(angle.radians) * radius)
 
 @dataclass
 class ray:

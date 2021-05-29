@@ -30,14 +30,21 @@ while True: # main game loop
         pass
 
     key = pygame.key.get_pressed()
-    if key[pygame.K_a]:
-        player1.velocity.x -= 0.02
-    if key[pygame.K_d]:
-        player1.velocity.x += 0.02
-    if key[pygame.K_w]:
-        player1.velocity.y -= 0.02
-    if key[pygame.K_s]:
-        player1.velocity.y += 0.02
+    if key[pygame.K_a] or key[pygame.K_d] or key[pygame.K_w] or key[pygame.K_s]:
+        velocity = vec2(0, 0)
+
+        if key[pygame.K_a]:
+            velocity.x -= 0.02
+        if key[pygame.K_d]:
+            velocity.x += 0.02
+        if key[pygame.K_w]:
+            velocity.y -= 0.02
+        if key[pygame.K_s]:
+            velocity.y += 0.02
+
+        # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
+        relative_velocity = velocity.relative(player1.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
+        player1.velocity = player1.velocity.add(relative_velocity.x, relative_velocity.y)
 
     if key[pygame.K_LEFT]:
         player1.yaw = player1.yaw.add(PI/180)
@@ -53,18 +60,16 @@ while True: # main game loop
     pygame.draw.circle(window, (255, 255, 63), (player1.position.x, player1.position.y), player1.boundingbox.radius, width=0) # draw the player
 
     render_distance = 200
-    render_amount = 100
+    render_amount = 30
 
-    minimum = player1.yaw.subtract(player1.fov.radians/2).radians
-    maximum = player1.yaw.add(player1.fov.radians/2).radians
+    minimum = player1.yaw.subtract(player1.fov.radians/2)
+    maximum = player1.yaw.add(player1.fov.radians/2)
     iterator = player1.fov.radians/render_amount
 
-    i = minimum
-    while (i < maximum): # won't work properly; radians loop after going below 0 or above 2pi, so numerical operators wont work
-        raycast = ray(player1.position, player1.position.add(math.sin(i) * render_distance, math.cos(i) * render_distance))
+    for i in range(render_amount):
+        radians = minimum.add(i * iterator).radians
+        raycast = ray(player1.position, player1.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
         pygame.draw.line(window, (255, 255, 30), (raycast.start.x, raycast.start.y), (raycast.finish.x, raycast.finish.y), width=1)
-        
-        i += iterator
 
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))
