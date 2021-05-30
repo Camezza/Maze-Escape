@@ -6,8 +6,9 @@ from entities import boundingbox, entity, player
 from interface import canvas
 
 pygame.init()
-window = pygame.display.set_mode((1280, 720)) # Initialise window
-minimap = canvas(vec2(50, 50), vec2(window.get_width(), window.get_height()), vec2(window.get_width()/2, window.get_height()/2))
+dimensions = vec2(1280, 720)
+window = pygame.display.set_mode(dimensions.display()) # Initialise window
+minimap = canvas(vec2(50, 50), dimensions, dimensions.divide(0.5, 0.5))
 
 '''
     Create the environment
@@ -54,12 +55,12 @@ while True: # main game loop
         player1.yaw = player1.yaw.subtract(PI/180)
 
     for wall in walls:
-        pygame.draw.line(window, (255, 255, 255), minimap.relative(wall.start).display(), minimap.relative(wall.finish).display(), width=5)
+        pygame.draw.line(window, (255, 255, 255), minimap.relative(wall.start, dimensions).display(), minimap.relative(wall.finish, dimensions).display(), width=5)
 
     for entity in entities:
         entity.tick()
         
-    pygame.draw.circle(window, (255, 255, 63), (player1.position.x, player1.position.y), player1.boundingbox.radius, width=0) # draw the player
+    pygame.draw.circle(window, (255, 255, 63), minimap.relative(player1.position, dimensions).display(), player1.boundingbox.radius, width=0) # draw the player
 
     render_distance = 200
     render_amount = 30
@@ -71,7 +72,7 @@ while True: # main game loop
     for i in range(render_amount):
         radians = minimum.add(i * iterator).radians
         raycast = ray(player1.position, player1.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
-        pygame.draw.line(window, (255, 255, 30), (raycast.start.x, raycast.start.y), (raycast.finish.x, raycast.finish.y), width=1)
+        pygame.draw.line(window, (255, 255, 30), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=1)
 
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))
