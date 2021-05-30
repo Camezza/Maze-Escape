@@ -58,6 +58,18 @@ class ray:
     A line ranging from point A to point B. Extends ray class
 '''
 class line(ray):
+    def intercept1(self, ray: ray):
+        '''
+            Simple line equation to find where rays intercept. y = mx + b = m(x-c)/a
+        '''
+        ray1_difference = self.finish.subtract(self.start.x, self.start.y)
+        ray2_difference = ray.finish.subtract(ray.start.x, ray.start.y)
+
+        # a = 0, and therefore 
+        if ray1_difference.x == 0 or ray2_difference.x == 0:
+            pass
+
+
     def intercept(self, ray: ray):
         '''
             Simple line equation to find where rays intercept. y = mx + b
@@ -75,10 +87,16 @@ class line(ray):
         ray1_b = self.start.y - (ray1_m * self.start.x) # y - mx = vertical offset (can also use y2 and x2)
         ray2_b = ray.start.y - (ray2_m * ray.start.x)
 
-        # No need to use this equation if both x gradients are zero.
-        if not (ray1_m == 0 and ray2_m == 0):
-            x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
-            y = (ray1_m * x) + ray1_b # sub x into original equation 
+        x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
+        y = (ray1_m * x) + ray1_b # sub x into original equation 
+
+        if ray1_m == 0:
+            x = self.start.x # x = 0, f(x) = mx + b. Sub x into f(x)
+            y = (ray2_m * x) + ray2_b
+        if ray2_m == 0:
+            x = ray.start.x
+            y = (ray1_m * x) + ray1_b
+        # y equals the equation with m=0
 
         # check that gradients are not the same
 
