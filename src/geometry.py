@@ -64,9 +64,27 @@ class line(ray):
         '''
         ray1_difference = self.finish.subtract(self.start.x, self.start.y)
         ray2_difference = ray.finish.subtract(ray.start.x, ray.start.y)
+        ray1_m = ray2_m = ray1_b = ray2_b = x = y = None # initialise
 
-        # a = 0, and therefore 
-        if ray1_difference.x == 0 or ray2_difference.x == 0:
+        '''
+            Determine which to sub for what. Required as programming (unlike maths) isn't dynamic and requires to be prefefined
+        '''
+        if (ray1_difference.y == 0 and ray1_difference.x == 0) or (ray1_difference.y == 0 and ray1_difference.x == 0): # both y = b and x = c
+
+            pass
+
+        elif ray1_difference.y == 0 or ray2_difference.y == 0: # where y = b
+            # need to check case where they are both zero
+            if ray1_difference.y == 0 and ray2_difference.y == 0:
+                pass
+
+            elif ray1_difference.y == 0:
+                pass
+
+            elif ray2_difference.y == 0:
+                pass
+
+        elif ray1_difference.x == 0 or ray2_difference.x == 0: # where x = c
             pass
 
 
@@ -89,14 +107,6 @@ class line(ray):
 
         x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
         y = (ray1_m * x) + ray1_b # sub x into original equation 
-
-        if ray1_m == 0:
-            x = self.start.x # x = 0, f(x) = mx + b. Sub x into f(x)
-            y = (ray2_m * x) + ray2_b
-        if ray2_m == 0:
-            x = ray.start.x
-            y = (ray1_m * x) + ray1_b
-        # y equals the equation with m=0
 
         # check that gradients are not the same
 
