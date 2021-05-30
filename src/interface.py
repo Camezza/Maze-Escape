@@ -10,6 +10,9 @@ class canvas:
     internal_dimensions: vec2 # The internal dimensions used for aligning absolute positions of objects
     display_dimensions: vec2 # The dimensions of the canvas which is actually displayed on the main window
 
+    def ratio(self, window_dimensions):
+        return self.display_dimensions.divide(window_dimensions.x, window_dimensions.y)
+
     '''
         Get an object's relative position to the canvas
     '''

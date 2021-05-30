@@ -14,10 +14,10 @@ minimap = canvas(vec2(50, 50), dimensions, dimensions.divide(0.5, 0.5))
     Create the environment
 '''
 walls = [
-    line(vec2(50, 50), vec2(50, 300)),
-    line(vec2(50, 300), vec2(300, 300)),
-    line(vec2(300, 300), vec2(300, 50)),
-    line(vec2(300, 50), vec2(50, 50)),
+    line(vec2(0, 0), vec2(0, 300)),
+    line(vec2(0, 300), vec2(300, 300)),
+    line(vec2(300, 300), vec2(300, 0)),
+    line(vec2(300, 0), vec2(0, 0)),
 ]
 
 '''
@@ -55,12 +55,16 @@ while True: # main game loop
         player1.yaw = player1.yaw.subtract(PI/180)
 
     for wall in walls:
-        pygame.draw.line(window, (255, 255, 255), minimap.relative(wall.start, dimensions).display(), minimap.relative(wall.finish, dimensions).display(), width=5)
+        colour = (255, 255, 255) # white
+        start = minimap.relative(wall.start, dimensions).display()
+        finish = minimap.relative(wall.finish, dimensions).display()
+        width = math.ceil(minimap.ratio(dimensions).length() * 5)
+        pygame.draw.line(window, colour, start, finish, width=width)
 
     for entity in entities:
         entity.tick()
         
-    pygame.draw.circle(window, (255, 255, 63), minimap.relative(player1.position, dimensions).display(), player1.boundingbox.radius, width=0) # draw the player
+    pygame.draw.circle(window, (255, 255, 60), minimap.relative(player1.position, dimensions).display(), minimap.ratio(dimensions).length() * player1.boundingbox.radius) # draw the player
 
     render_distance = 200
     render_amount = 30
@@ -72,7 +76,15 @@ while True: # main game loop
     for i in range(render_amount):
         radians = minimum.add(i * iterator).radians
         raycast = ray(player1.position, player1.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
-        pygame.draw.line(window, (255, 255, 30), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=1)
+        pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
+
+        for wall in walls:
+            intercept = wall.intercept(raycast)
+
+            if intercept != None:
+                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
+
+
 
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))

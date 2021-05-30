@@ -39,8 +39,11 @@ class vec2:
     def divide(self, x: float, y: float):
         return vec2(self.x / x, self.y / y)
 
+    def length(self):
+        return ((self.x ** 2) + (self.y ** 2)) ** (1/2)
+
     def relative(self, angle: angle):
-        radius = ((self.x ** 2) + (self.y ** 2)) ** (1/2)
+        radius = self.length()
         return vec2(math.sin(angle.radians) * radius, math.cos(angle.radians) * radius)
 
     def display(self):
@@ -59,12 +62,25 @@ class line(ray):
         '''
             Simple line equation to find where rays intercept. y = mx + b
         '''
-        ray1_m = (self.finish.x - self.start.x)/(self.finish.y - self.start.y) # gradient = (x_2-x_1)/(y_2-y_1)
+        ray1_difference = self.finish.subtract(self.start.x, self.start.y)
+        ray2_difference = ray.finish.subtract(ray.start.x, ray.start.y)
+        ray1_m = ray2_m = 0
+
+        # Check if the lines actually have a y gradient (x difference not zero) before performing equations
+        if ray1_difference.x != 0:
+            ray1_m = ray1_difference.y / ray1_difference.x # gradient = (x_2-x_1)/(y_2-y_1)
+        if ray2_difference.x != 0:
+            ray2_m = ray2_difference.y / ray2_difference.x
+
         ray1_b = self.start.y - (ray1_m * self.start.x) # y - mx = vertical offset (can also use y2 and x2)
-        ray2_m = (ray.finish.x - ray.start.x)/(ray.finish.y - ray.start.y)
         ray2_b = ray.start.y - (ray2_m * ray.start.x)
-        x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
-        y = (ray1_m * x) + ray1_b # sub x into original equation 
+
+        # No need to use this equation if both x gradients are zero.
+        if not (ray1_m == 0 and ray2_m == 0):
+            x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
+            y = (ray1_m * x) + ray1_b # sub x into original equation 
+
+        # check that gradients are not the same
 
         # Retreive the domains and ranges
         ray1_x_min = min(self.start.x, self.finish.x)
