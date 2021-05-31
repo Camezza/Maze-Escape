@@ -58,57 +58,56 @@ class ray:
     A line ranging from point A to point B. Extends ray class
 '''
 class line(ray):
-    def intercept1(self, ray: ray):
+    def intercept(self, ray: ray):
         '''
             Simple line equation to find where rays intercept. y = mx + b = m(x-c)/a
         '''
         ray1_difference = self.finish.subtract(self.start.x, self.start.y)
         ray2_difference = ray.finish.subtract(ray.start.x, ray.start.y)
-        ray1_m = ray2_m = ray1_b = ray2_b = x = y = None # initialise
+        x = y = None # initialise
 
         '''
-            Determine which to sub for what. Required as programming (unlike maths) isn't dynamic and requires to be prefefined
+            Determine which to sub for what. Required as programming (unlike maths) isn't dynamic and is required to be predefined
         '''
-        if (ray1_difference.y == 0 and ray1_difference.x == 0) or (ray1_difference.y == 0 and ray1_difference.x == 0): # both y = b and x = c
-
-            pass
+        if (ray1_difference.y == 0 and ray1_difference.x == 0) or (ray2_difference.y == 0 and ray2_difference.x == 0): # both y = b and x = c
+            if (ray1_difference.y == 0 and ray1_difference.x == 0) and (ray2_difference.y == 0 and ray2_difference.x == 0):
+                return None
+            else:
+                x = self.start.x
+                y = self.start.y
 
         elif ray1_difference.y == 0 or ray2_difference.y == 0: # where y = b
-            # need to check case where they are both zero
+            # Lines will never intercept, as both equations equal constants
             if ray1_difference.y == 0 and ray2_difference.y == 0:
-                pass
+                return None
 
             elif ray1_difference.y == 0:
-                pass
+                m = ray2_difference.y / ray2_difference.x
+                b = ray.start.y - (m * ray.start.x)
+                x = (self.start.y - b)/m
+                y = self.start.y
 
             elif ray2_difference.y == 0:
-                pass
+                m = ray1_difference.y / ray1_difference.x
+                b = self.start.y - (m * self.start.x)
+                x = (ray.start.y - b)/m
+                y = ray.start.y
 
         elif ray1_difference.x == 0 or ray2_difference.x == 0: # where x = c
-            pass
+            if ray1_difference.x == 0 and ray2_difference.x == 0:
+                return None
 
+            elif ray1_difference.x == 0:
+                m = ray2_difference.y / ray2_difference.x
+                b = ray.start.y - (m * ray.start.x)
+                x = self.start.x
+                y = (m * x) + b
 
-    def intercept(self, ray: ray):
-        '''
-            Simple line equation to find where rays intercept. y = mx + b
-        '''
-        ray1_difference = self.finish.subtract(self.start.x, self.start.y)
-        ray2_difference = ray.finish.subtract(ray.start.x, ray.start.y)
-        ray1_m = ray2_m = 0
-
-        # Check if the lines actually have a y gradient (x difference not zero) before performing equations
-        if ray1_difference.x != 0:
-            ray1_m = ray1_difference.y / ray1_difference.x # gradient = (x_2-x_1)/(y_2-y_1)
-        if ray2_difference.x != 0:
-            ray2_m = ray2_difference.y / ray2_difference.x
-
-        ray1_b = self.start.y - (ray1_m * self.start.x) # y - mx = vertical offset (can also use y2 and x2)
-        ray2_b = ray.start.y - (ray2_m * ray.start.x)
-
-        x = (ray2_b - ray1_b)/(ray1_m - ray2_m)
-        y = (ray1_m * x) + ray1_b # sub x into original equation 
-
-        # check that gradients are not the same
+            elif ray2_difference.x == 0:
+                m = ray1_difference.y / ray1_difference.x
+                b = self.start.y - (m * self.start.x)
+                x = ray.start.x
+                y = (m * x) + b
 
         # Retreive the domains and ranges
         ray1_x_min = min(self.start.x, self.finish.x)

@@ -8,7 +8,7 @@ from interface import canvas
 pygame.init()
 dimensions = vec2(1280, 720)
 window = pygame.display.set_mode(dimensions.display()) # Initialise window
-minimap = canvas(vec2(50, 50), dimensions, dimensions.divide(0.5, 0.5))
+minimap = canvas(vec2(50, 50), dimensions, dimensions.divide(0.75, 0.75))
 
 '''
     Create the environment
