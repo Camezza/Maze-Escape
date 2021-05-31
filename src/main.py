@@ -9,6 +9,7 @@ pygame.init()
 dimensions = vec2(1280, 720)
 window = pygame.display.set_mode(dimensions.display()) # Initialise window
 minimap = canvas(vec2(50, 50), dimensions, dimensions.divide(0.75, 0.75))
+camera = canvas(vec2(0, 0), dimensions, dimensions)
 
 '''
     Create the environment
@@ -66,7 +67,7 @@ while True: # main game loop
         
     pygame.draw.circle(window, (255, 255, 60), minimap.relative(player1.position, dimensions).display(), minimap.ratio(dimensions).length() * player1.boundingbox.radius) # draw the player
 
-    render_distance = 200
+    render_distance = 400
     render_amount = 30
 
     minimum = player1.yaw.subtract(player1.fov.radians/2)
