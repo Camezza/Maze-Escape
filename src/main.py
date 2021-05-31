@@ -8,7 +8,7 @@ from interface import canvas
 pygame.init()
 dimensions = vec2(1280, 720)
 window = pygame.display.set_mode(dimensions.display()) # Initialise window
-minimap = canvas(vec2(50, 50), dimensions, dimensions.divide(0.75, 0.75))
+minimap = canvas(vec2(10, 10), dimensions, dimensions.divide(1.5, 1.5))
 camera = canvas(vec2(0, 0), dimensions, dimensions)
 
 '''
@@ -66,6 +66,25 @@ while True:
         player1.yaw = player1.yaw.subtract(PI/180)
 
     '''
+
+    '''
+    rays = player1.retrieveRays(400, 90)
+    for i in range(len(rays)):
+        raycast = rays[i]
+        pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
+
+        for wall in walls:
+            intercept = wall.intercept(raycast)
+
+            if intercept != None:
+                distance = player1.position.distance(intercept)
+                bar_dimensions = vec2((dimensions.x * (1/len(rays))-4), dimensions.y * (10/distance))
+                position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
+                rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
+                pygame.draw.rect(window, (255, 255, 255), rect)
+                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
+
+    '''
         Display minimap
     '''
 
@@ -80,20 +99,6 @@ while True:
         entity.tick()
         
     pygame.draw.circle(window, (255, 255, 60), minimap.relative(player1.position, dimensions).display(), minimap.ratio(dimensions).length() * player1.boundingbox.radius) # draw the player
-
-    rays = player1.retrieveRays(400, 30)
-    for i in range(len(rays)):
-        raycast = rays[i]
-        pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
-
-        for wall in walls:
-            intercept = wall.intercept(raycast)
-
-            if intercept != None:
-                distance = player1.position.distance(intercept)
-                rect = pygame.Rect(dimensions.x * (i/len(rays)), (dimensions.y / 2), (dimensions.x * (1/len(rays)))/2, dimensions.y * (1/distance))
-                pygame.draw.rect(window, (255, 255, 255), rect)
-                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
 
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))
