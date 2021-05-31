@@ -70,11 +70,7 @@ class line(ray):
             Determine which to sub for what. Required as programming (unlike maths) isn't dynamic and is required to be predefined
         '''
         if (ray1_difference.y == 0 and ray1_difference.x == 0) or (ray2_difference.y == 0 and ray2_difference.x == 0): # both y = b and x = c
-            if (ray1_difference.y == 0 and ray1_difference.x == 0) and (ray2_difference.y == 0 and ray2_difference.x == 0):
-                return None
-            else:
-                x = self.start.x
-                y = self.start.y
+            return None
 
         elif ray1_difference.y == 0 or ray2_difference.y == 0: # where y = b
             # Lines will never intercept, as both equations equal constants
