@@ -42,6 +42,10 @@ class vec2:
     def length(self):
         return ((self.x ** 2) + (self.y ** 2)) ** (1/2)
 
+    def distance(self, position):
+        difference = position.subtract(self.x, self.y)
+        return ((difference.x ** 2) + (difference.y ** 2)) ** (1/2)
+
     def relative(self, angle: angle):
         radius = self.length()
         return vec2(math.sin(angle.radians) * radius, math.cos(angle.radians) * radius)

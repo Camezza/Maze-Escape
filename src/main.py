@@ -28,11 +28,21 @@ player1 = player(vec2(100, 100), boundingbox(10))
 entities = [
     player1
 ]
+    
 
-while True: # main game loop
+'''
+    Update loop
+'''
+while True:
+    '''
+        Retrieve queued input events
+    '''
     for event in pygame.event.get(): # Retreive all queued events. Must be ran to display a window
         pass
 
+    '''
+        Retrieve keystrokes
+    '''
     key = pygame.key.get_pressed()
     if key[pygame.K_a] or key[pygame.K_d] or key[pygame.K_w] or key[pygame.K_s]:
         velocity = vec2(0, 0)
@@ -55,6 +65,10 @@ while True: # main game loop
     if key[pygame.K_RIGHT]:
         player1.yaw = player1.yaw.subtract(PI/180)
 
+    '''
+        Display minimap
+    '''
+
     for wall in walls:
         colour = (255, 255, 255) # white
         start = minimap.relative(wall.start, dimensions).display()
@@ -67,26 +81,19 @@ while True: # main game loop
         
     pygame.draw.circle(window, (255, 255, 60), minimap.relative(player1.position, dimensions).display(), minimap.ratio(dimensions).length() * player1.boundingbox.radius) # draw the player
 
-    render_distance = 400
-    render_amount = 30
-
-    minimum = player1.yaw.subtract(player1.fov.radians/2)
-    maximum = player1.yaw.add(player1.fov.radians/2)
-    iterator = player1.fov.radians/render_amount
-
-    for i in range(render_amount):
-        radians = minimum.add(i * iterator).radians
-        raycast = ray(player1.position, player1.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
+    rays = player1.retrieveRays(400, 30)
+    for i in range(len(rays)):
+        raycast = rays[i]
         pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
 
         for wall in walls:
             intercept = wall.intercept(raycast)
 
             if intercept != None:
+                distance = player1.position.distance(intercept)
+                rect = pygame.Rect(dimensions.x * (i/len(rays)), (dimensions.y / 2), (dimensions.x * (1/len(rays)))/2, dimensions.y * (1/distance))
+                pygame.draw.rect(window, (255, 255, 255), rect)
                 pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
-
-
 
     pygame.display.update() # Update the window displayed
     window.fill((0, 0, 0))
-    
