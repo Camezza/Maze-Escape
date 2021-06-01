@@ -8,7 +8,7 @@ from interface import canvas
 pygame.init()
 dimensions = vec2(1280, 720)
 window = pygame.display.set_mode(dimensions.display()) # Initialise window
-minimap = canvas(vec2(10, 10), dimensions, dimensions.divide(1.5, 1.5))
+minimap = canvas(vec2(10, 10), dimensions, dimensions.divide(4, 4))
 camera = canvas(vec2(0, 0), dimensions, dimensions)
 
 '''
@@ -68,25 +68,32 @@ while True:
     '''
 
     '''
-    rays = player1.retrieveRays(400, 90)
+    rays = list(reversed(player1.retrieveRays(400, 60)))
+
+    # todo: triangles connecting each column.
+    # perhaps columns uncovering a texture?
+
     for i in range(len(rays)):
         raycast = rays[i]
-        pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
+        #pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
 
         for wall in walls:
             intercept = wall.intercept(raycast)
 
             if intercept != None:
                 distance = player1.position.distance(intercept)
-                bar_dimensions = vec2((dimensions.x * (1/len(rays))-4), dimensions.y * (10/distance))
+                bar_dimensions = vec2((dimensions.x * (1/len(rays))+1), dimensions.y * (10/distance))
                 position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
                 rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
                 pygame.draw.rect(window, (255, 255, 255), rect)
-                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
+                #pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
 
     '''
         Display minimap
     '''
+
+    rect = pygame.Rect(minimap.position.x, minimap.position.y, minimap.display_dimensions.x, minimap.display_dimensions.y)
+    pygame.draw.rect(window, (10, 10, 10), rect)
 
     for wall in walls:
         colour = (255, 255, 255) # white
