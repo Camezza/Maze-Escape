@@ -3,7 +3,7 @@ import math
 from pygame.locals import *
 from geometry import vec2, ray, line, PI
 from entities import boundingbox, entity, player
-from interface import canvas
+from interface import canvas, colourDistanceMultiplier
 
 pygame.init()
 dimensions = vec2(1280, 720)
@@ -85,13 +85,15 @@ while True:
                 bar_dimensions = vec2((dimensions.x * (1/len(rays))+1), dimensions.y * (10/distance))
                 position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
                 rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
-                pygame.draw.rect(window, (255, 255, 255), rect)
-                #pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
+                colour = 255 * colourDistanceMultiplier(distance, 10)
+                pygame.draw.rect(window, (colour, colour, colour), rect)
+                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
 
     '''
         Display minimap
     '''
 
+    # このコードが
     rect = pygame.Rect(minimap.position.x, minimap.position.y, minimap.display_dimensions.x, minimap.display_dimensions.y)
     pygame.draw.rect(window, (10, 10, 10), rect)
 
