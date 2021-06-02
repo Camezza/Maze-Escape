@@ -68,7 +68,7 @@ while True:
     '''
 
     '''
-    rays = list(reversed(player1.retrieveRays(400, 60)))
+    rays = list(reversed(player1.retrieveRays(400, 120)))
 
     # todo: triangles connecting each column.
     # perhaps columns uncovering a texture?
@@ -82,7 +82,7 @@ while True:
 
             if intercept != None:
                 distance = player1.position.distance(intercept)
-                bar_dimensions = vec2((dimensions.x * (1/len(rays))+1), dimensions.y * (10/distance))
+                bar_dimensions = vec2((dimensions.x * (1/len(rays))-4), dimensions.y * (10/distance))
                 position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
                 rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
                 pygame.draw.rect(window, (255, 255, 255), rect)
