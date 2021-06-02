@@ -33,3 +33,9 @@ class canvas:
         # An offset of the object to the canvas's position. This is the true position of the object.
         final_position = self.position.add(canvas_display_position.x, canvas_display_position.y)
         return final_position
+
+def colourDistanceMultiplier(distance: float, gamma: int):
+    relative_colour = gamma/distance
+    if distance < 1 or relative_colour > 1:
+        return 1
+    return relative_colour
