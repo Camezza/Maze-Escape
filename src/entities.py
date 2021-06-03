@@ -1,20 +1,17 @@
 import math
+from typing import Optional
 from dataclasses import dataclass
 from geometry import vec2, angle, PI, ray
-from world import FRICTION
-
-@dataclass
-class boundingbox:
-    radius: int
+from world import FRICTION, boundingbox
 
 @dataclass
 class entity:
     position: vec2
     boundingbox: boundingbox
+    fov: Optional[angle] = angle(PI/2)
     
-    velocity = vec2(0, 0)
     yaw = angle(0)
-    fov = angle(PI/2)
+    velocity = vec2(0, 0)
 
     '''
         Physics

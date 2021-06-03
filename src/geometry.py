@@ -1,6 +1,5 @@
 import math
 from dataclasses import dataclass
-from typing import List
 PI = 22/7
 
 @dataclass

@@ -25,6 +25,7 @@ walls = [
     Create the player
 '''
 player1 = player(vec2(100, 100), boundingbox(10))
+print(player1.boundingbox.boundaries)
 entities = [
     player1
 ]
