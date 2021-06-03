@@ -69,26 +69,33 @@ while True:
     '''
 
     '''
-    rays = list(reversed(player1.retrieveRays(400, 120)))
+    rays = list(reversed(player1.retrieveRays(400, 60)))
 
     # todo: triangles connecting each column.
     # perhaps columns uncovering a texture?
 
     for i in range(len(rays)):
         raycast = rays[i]
+        closest_point = None
         #pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
 
         for wall in walls:
             intercept = wall.intercept(raycast)
 
-            if intercept != None:
-                distance = player1.position.distance(intercept)
-                bar_dimensions = vec2((dimensions.x * (1/len(rays))-4), dimensions.y * (10/distance))
-                position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
-                rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
-                colour = 255 * colourDistanceMultiplier(distance, 10)
-                pygame.draw.rect(window, (colour, colour, colour), rect)
+            if not intercept is None:
                 pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
+                if closest_point is None:
+                    closest_point = intercept
+                elif player1.position.distance(intercept) < player1.position.distance(closest_point):
+                    closest_point = intercept
+
+        if not closest_point is None:
+            distance = player1.position.distance(closest_point)
+            bar_dimensions = vec2((dimensions.x * (1/len(rays))+1), dimensions.y * (10/distance))
+            position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
+            rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
+            colour = 255 * colourDistanceMultiplier(distance, 20)
+            pygame.draw.rect(window, (colour, colour, colour), rect)
 
     '''
         Display minimap
