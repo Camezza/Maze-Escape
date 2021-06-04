@@ -1,8 +1,8 @@
 import pygame
 import math
 from pygame.locals import *
-from world import wall, terrain
-from geometry import vec2, ray, line, PI
+from world import terrain, polygon
+from geometry import vec2, line, PI
 from entities import boundingbox, entity, player
 from interface import canvas, colourDistanceMultiplier
 
@@ -15,15 +15,17 @@ camera = canvas(vec2(0, 0), dimensions, dimensions)
 '''
     Create the environment
 '''
+
+world = terrain(vec2(50, 50))
+world.setSquare(vec2(5, 5), polygon(boundingbox(5)))
+world.setSquare(vec2(20, 20), polygon(boundingbox(10)))
+
 walls = [
     line(vec2(0, 0), vec2(0, 300)),
     line(vec2(0, 300), vec2(300, 300)),
     line(vec2(300, 300), vec2(300, 0)),
     line(vec2(300, 0), vec2(0, 0)),
 ]
-
-plain = terrain(vec2(50, 50))
-print(plain.getSquare(vec2(25, 25)))
 
 '''
     Create the player
@@ -81,6 +83,28 @@ while True:
         closest_point = None
         #pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
 
+        for x in range(world.dimensions.x):
+            for y in range(world.dimensions.y):
+                square = world.getSquare(vec2(x, y))
+
+                if not square is None:
+                    occupation = square.occupation
+                    
+                    if not occupation.display is None:
+                        for boundary in occupation.display:
+                            intercept = boundary.intercept(raycast)
+
+                            if not intercept is None:
+                                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
+                                if closest_point is None:
+                                    closest_point = intercept
+                                elif player1.position.distance(intercept) < player1.position.distance(closest_point):
+                                    closest_point = intercept
+
+        '''
+            Checks walls
+        '''
+
         for wall in walls:
             intercept = wall.intercept(raycast)
 
@@ -98,6 +122,22 @@ while True:
             rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
             colour = 255 * colourDistanceMultiplier(distance, 20)
             pygame.draw.rect(window, (colour, colour, colour), rect)
+
+    '''
+        Check world
+    '''
+
+    for x in range(world.dimensions.x):
+        for y in range(world.dimensions.y):
+            square = world.getSquare(vec2(x, y))
+
+            if not square is None:
+                occupation = square.occupation
+                
+                if not occupation.display is None:
+                    for boundary in occupation.display:
+                      intercept = boundary.intercept()
+
 
     '''
         Display minimap

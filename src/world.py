@@ -29,7 +29,11 @@ class object:
 
 @dataclass
 class polygon(object):
-    display: Optional[List[line]] = boundingbox.boundaries # generate a boundingbox relative shape by default
+    display: Optional[List[line]] = None # generate a boundingbox relative shape by default
+
+    def __post_init__(self):
+        if self.display is None:
+            self.display = self.boundingbox.boundaries
 
 '''
     Coordinate & space occupation
@@ -37,8 +41,7 @@ class polygon(object):
 
 @dataclass
 class square:
-    position: vec2
-    occupation: Optional[object] = None
+    occupation: Optional[polygon] = None
 
     def setOccupation(self, occupation: object):
         self.occupation = occupation
@@ -58,7 +61,7 @@ class terrain:
             grid.append([])
             # fill in y axis
             for y in range(self.dimensions.y):
-                grid[x].append(square(vec2(x, y)))
+                grid[x].append(None)
 
         return grid
 
@@ -69,7 +72,17 @@ class terrain:
         try:
             return self.grid[vec2.x][vec2.y]
         except AttributeError:
-            return None
+            raise Exception('Could not retrieve square that is not in coordinate scope')
+
+    def setSquare(self, vec2, object):
+        square_instance = self.getSquare(vec2)
+        try:
+            if square_instance is None:
+                self.grid[vec2.x][vec2.y] = square(object)
+            elif square_instance.occupation is None:
+                self.grid[vec2.x][vec2.y].occupation = object
+        except AttributeError:
+            raise Exception('Cannot set square of type undefined')
 
     def __post_init__(self):
         self.grid = self.generate_grid()
