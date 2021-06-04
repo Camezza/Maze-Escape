@@ -1,6 +1,7 @@
 import pygame
 import math
 from pygame.locals import *
+from world import wall, terrain
 from geometry import vec2, ray, line, PI
 from entities import boundingbox, entity, player
 from interface import canvas, colourDistanceMultiplier
@@ -21,16 +22,17 @@ walls = [
     line(vec2(300, 0), vec2(0, 0)),
 ]
 
+plain = terrain(vec2(50, 50))
+print(plain.getSquare(vec2(25, 25)))
+
 '''
     Create the player
 '''
 player1 = player(vec2(100, 100), boundingbox(10))
-print(player1.boundingbox.boundaries)
 entities = [
     player1
 ]
     
-
 '''
     Update loop
 '''
@@ -101,7 +103,6 @@ while True:
         Display minimap
     '''
 
-    # このコードが
     rect = pygame.Rect(minimap.position.x, minimap.position.y, minimap.display_dimensions.x, minimap.display_dimensions.y)
     pygame.draw.rect(window, (10, 10, 10), rect)
 
