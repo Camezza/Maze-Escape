@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 from dataclasses import dataclass
-from geometry import vec2, angle, PI, ray
+from geometry import vec2, angle, PI, line
 from world import FRICTION, boundingbox
 
 @dataclass
@@ -22,7 +22,7 @@ class entity:
         minimum = self.yaw.subtract(self.fov.radians/2)
         for i in range(render_amount):
             radians = minimum.add(i * iterator).radians
-            raycast = ray(self.position, self.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
+            raycast = line(self.position, self.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
             rays.append(raycast)
 
         return rays

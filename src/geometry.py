@@ -52,60 +52,69 @@ class vec2:
     def display(self):
         return (self.x, self.y)
 
-@dataclass
-class ray:
-    start: vec2
-    finish: vec2
-
 '''
     A line ranging from point A to point B. Extends ray class
 '''
-class line(ray):
-    def intercept(self, ray: ray):
+@dataclass
+class line:
+    start: vec2
+    finish: vec2
+
+    def offset(self, position: vec2):
+        start = self.start.add(position.x, position.y)
+        finish = self.finish.add(position.x, position.y)
+        return line(start, finish)
+
+    def relative(self, dimensions: vec2, absolute_dimensions: vec2):
+        start = vec2((self.start.x/dimensions.x) * absolute_dimensions.x, (self.start.y/dimensions.y) * absolute_dimensions.y)
+        finish = vec2((self.finish.x/dimensions.x) * absolute_dimensions.x, (self.finish.y/dimensions.y) * absolute_dimensions.y)
+        return line(start, finish)
+
+    def intercept(self, line):
         '''
             Simple line equation to find where rays intercept. y = mx + b = m(x-c)/a
         '''
-        ray1_difference = self.finish.subtract(self.start.x, self.start.y)
-        ray2_difference = ray.finish.subtract(ray.start.x, ray.start.y)
+        line1_difference = self.finish.subtract(self.start.x, self.start.y)
+        line2_difference = line.finish.subtract(line.start.x, line.start.y)
         x = y = None # initialise
 
         '''
             Determine which to sub for what. Required as programming (unlike maths) isn't dynamic and is required to be predefined
         '''
-        if (ray1_difference.y == 0 and ray1_difference.x == 0) or (ray2_difference.y == 0 and ray2_difference.x == 0): # both y = b and x = c
+        if (line1_difference.y == 0 and line1_difference.x == 0) or (line2_difference.y == 0 and line2_difference.x == 0): # both y = b and x = c
             return None
 
-        elif ray1_difference.y == 0 or ray2_difference.y == 0: # where y = b
+        elif line1_difference.y == 0 or line2_difference.y == 0: # where y = b
             # Lines will never intercept, as both equations equal constants
-            if ray1_difference.y == 0 and ray2_difference.y == 0:
+            if line1_difference.y == 0 and line2_difference.y == 0:
                 return None
 
-            elif ray1_difference.y == 0:
-                m = ray2_difference.y / ray2_difference.x
-                b = ray.start.y - (m * ray.start.x)
+            elif line1_difference.y == 0:
+                m = line2_difference.y / line2_difference.x
+                b = line.start.y - (m * line.start.x)
                 x = (self.start.y - b)/m
                 y = self.start.y
 
-            elif ray2_difference.y == 0:
-                m = ray1_difference.y / ray1_difference.x
+            elif line2_difference.y == 0:
+                m = line1_difference.y / line1_difference.x
                 b = self.start.y - (m * self.start.x)
-                x = (ray.start.y - b)/m
-                y = ray.start.y
+                x = (line.start.y - b)/m
+                y = line.start.y
 
-        elif ray1_difference.x == 0 or ray2_difference.x == 0: # where x = c
-            if ray1_difference.x == 0 and ray2_difference.x == 0:
+        elif line1_difference.x == 0 or line2_difference.x == 0: # where x = c
+            if line1_difference.x == 0 and line2_difference.x == 0:
                 return None
 
-            elif ray1_difference.x == 0:
-                m = ray2_difference.y / ray2_difference.x
-                b = ray.start.y - (m * ray.start.x)
+            elif line1_difference.x == 0:
+                m = line2_difference.y / line2_difference.x
+                b = line.start.y - (m * line.start.x)
                 x = self.start.x
                 y = (m * x) + b
 
-            elif ray2_difference.x == 0:
-                m = ray1_difference.y / ray1_difference.x
+            elif line2_difference.x == 0:
+                m = line1_difference.y / line1_difference.x
                 b = self.start.y - (m * self.start.x)
-                x = ray.start.x
+                x = line.start.x
                 y = (m * x) + b
 
         # Retreive the domains and ranges
@@ -115,11 +124,11 @@ class line(ray):
         ray1_y_min = min(self.start.y, self.finish.y)
         ray1_y_max = max(self.start.y, self.finish.y)
 
-        ray2_x_min = min(ray.start.x, ray.finish.x)
-        ray2_x_max = max(ray.start.x, ray.finish.x)
+        ray2_x_min = min(line.start.x, line.finish.x)
+        ray2_x_max = max(line.start.x, line.finish.x)
 
-        ray2_y_min = min(ray.start.y, ray.finish.y)
-        ray2_y_max = max(ray.start.y, ray.finish.y)
+        ray2_y_min = min(line.start.y, line.finish.y)
+        ray2_y_max = max(line.start.y, line.finish.y)
 
         # Determine if line intercepts between each ray's domain and range
         ray1Domain: bool = (ray1_x_min <= x and x <= ray1_x_max)
