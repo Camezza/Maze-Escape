@@ -85,6 +85,7 @@ while True:
         closest_point = None
         #pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
 
+        '''
         for x in range(world.dimensions.x):
             for y in range(world.dimensions.y):
                 square = world.getSquare(vec2(x, y))
@@ -103,6 +104,8 @@ while True:
                         closest_point = intercept
                     elif player1.position.distance(intercept) < player1.position.distance(closest_point):
                         closest_point = intercept
+
+            '''
 
         '''
             Checks walls
