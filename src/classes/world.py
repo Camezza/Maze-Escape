@@ -1,7 +1,6 @@
-from typing import List
 from dataclasses import dataclass
 from typing import Optional, List
-from geometry import vec2, line
+from classes.geometry import vec2, line
 
 FRICTION = 1.05
 

@@ -1,8 +1,8 @@
 import math
 from typing import Optional
 from dataclasses import dataclass
-from geometry import vec2, angle, PI, line
-from world import FRICTION, boundingbox
+from classes.geometry import vec2, angle, PI, line
+from classes.world import FRICTION, boundingbox
 
 @dataclass
 class entity:
@@ -16,7 +16,7 @@ class entity:
     '''
         Physics
     '''
-    def retrieveRays(self, render_distance: int, render_amount: int):
+    def raycast(self, render_distance: int, render_amount: int):
         rays = []
         iterator = self.fov.radians / render_amount
         minimum = self.yaw.subtract(self.fov.radians/2)
@@ -33,6 +33,3 @@ class entity:
     def tick(self):
         self.position = self.position.add(self.velocity.x, self.velocity.y) # Update velocity
         self.velocity = self.velocity.divide(FRICTION, FRICTION) # Apply friction constant to current velocity
-
-class player(entity):
-    pass

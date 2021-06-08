@@ -1,170 +1,112 @@
+# Miscellaneous modules
 import pygame
 import math
+from typing import List
 from pygame.locals import *
-from world import terrain, polygon
-from geometry import vec2, line, PI
-from entities import boundingbox, entity, player
-from interface import canvas, colourDistanceMultiplier
 
-pygame.init()
-dimensions = vec2(1280, 720)
-map_dimensions = vec2(50, 50)
-window = pygame.display.set_mode(dimensions.display()) # Initialise window
-minimap = canvas(vec2(10, 10), dimensions, dimensions.divide(4, 4))
-camera = canvas(vec2(0, 0), dimensions, dimensions)
+# Modules for threading
+import asyncio
+import time
+import warnings
 
-'''
-    Create the environment
-'''
-
-world = terrain(map_dimensions, dimensions)
-world.setSquare(vec2(5, 4), polygon(boundingbox(5)))
-world.setSquare(vec2(20, 20), polygon(boundingbox(10)))
-print(world.getSquare(vec2(5, 4)))
-
-walls = [
-    line(vec2(0, 0), vec2(0, 300)),
-    line(vec2(0, 300), vec2(300, 300)),
-    line(vec2(300, 300), vec2(300, 0)),
-    line(vec2(300, 0), vec2(0, 0)),
-]
+# Local modules
+from classes.world import terrain, polygon
+from classes.geometry import vec2, line, PI
+from classes.entities import boundingbox, entity
+from classes.interface import canvas, colourDistanceMultiplier
 
 '''
-    Create the player
+    GLOBAL DEFINITIONS
 '''
-player1 = player(vec2(100, 100), boundingbox(10))
-entities = [
-    player1
-]
-    
+# Threading
+TICK_FREQUENCY = 20
+
+# Display
+WINDOW_DIMENSIONS = vec2(1920, 1080) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
+WORLD_DIMENSIONS = vec2(100, 100) # World coordinate dimensions, affects how objects are oriented on a cartesian map
+MINIMAP = canvas(vec2(10, 10), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS.divide(4, 4))
+PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
+WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
+
+# World
+WORLD = terrain(WORLD_DIMENSIONS, WINDOW_DIMENSIONS)
+PLAYER = entity(vec2(0, 0), boundingbox(5))
+ENTITIES: List[entity] = []
+
+# 3D View
+RENDER_DISTANCE = 400
+RENDER_RESOLUTION = 60
+RAYS: List[line] = None
+
 '''
-    Update loop
+    MAIN PROCESS
 '''
-while True:
-    '''
-        Retrieve queued input events
-    '''
+
+# Processes high level window interaction events from the user.
+def eventHandler():
     for event in pygame.event.get(): # Retreive all queued events. Must be ran to display a window
         pass
 
-    '''
-        Retrieve keystrokes
-    '''
-    key = pygame.key.get_pressed()
-    if key[pygame.K_a] or key[pygame.K_d] or key[pygame.K_w] or key[pygame.K_s]:
-        velocity = vec2(0, 0)
+# Reads combinations of keystrokes and handles them accordingly
+def keystrokeHandler():
+        key = pygame.key.get_pressed()
+        if key[pygame.K_a] or key[pygame.K_d] or key[pygame.K_w] or key[pygame.K_s]:
+            velocity = vec2(0, 0)
 
-        if key[pygame.K_a]:
-            velocity.x -= 0.02
-        if key[pygame.K_d]:
-            velocity.x += 0.02
-        if key[pygame.K_w]:
-            velocity.y -= 0.02
-        if key[pygame.K_s]:
-            velocity.y += 0.02
+            if key[pygame.K_a]:
+                velocity.x -= 0.02
+            if key[pygame.K_d]:
+                velocity.x += 0.02
+            if key[pygame.K_w]:
+                velocity.y -= 0.02
+            if key[pygame.K_s]:
+                velocity.y += 0.02
 
-        # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
-        relative_velocity = velocity.relative(player1.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
-        player1.velocity = player1.velocity.add(relative_velocity.x, relative_velocity.y)
+            # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
+            relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
+            PLAYER.velocity = PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
 
-    if key[pygame.K_LEFT]:
-        player1.yaw = player1.yaw.add(PI/180)
-    if key[pygame.K_RIGHT]:
-        player1.yaw = player1.yaw.subtract(PI/180)
+        if key[pygame.K_LEFT]:
+            PLAYER.yaw = PLAYER.yaw.add(PI/180)
+        if key[pygame.K_RIGHT]:
+            PLAYER.yaw = PLAYER.yaw.subtract(PI/180)
 
-    '''
-
-    '''
-    rays = list(reversed(player1.retrieveRays(400, 60)))
-
-    # todo: triangles connecting each column.
-    # perhaps columns uncovering a texture?
-
-    for i in range(len(rays)):
-        raycast = rays[i]
-        closest_point = None
-        #pygame.draw.line(window, (255, 255, 128), minimap.relative(raycast.start, dimensions).display(), minimap.relative(raycast.finish, dimensions).display(), width=math.ceil(minimap.ratio(dimensions).length() * 1))
-
-        '''
-        for x in range(world.dimensions.x):
-            for y in range(world.dimensions.y):
-                square = world.getSquare(vec2(x, y))
-
-                if square is None or square.occupation is None:
-                    continue
-
-                for boundary in square.occupation.display:
-                    intercept = boundary.relative(dimensions, map_dimensions).intercept(raycast)
-
-                    if intercept is None:
-                        continue
-
-                    pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
-                    if closest_point is None:
-                        closest_point = intercept
-                    elif player1.position.distance(intercept) < player1.position.distance(closest_point):
-                        closest_point = intercept
-
-            '''
-
-        '''
-            Checks walls
-        '''
-
-        for wall in walls:
-            intercept = wall.intercept(raycast)
-
-            if not intercept is None:
-                pygame.draw.circle(window, (255, 255, 0), minimap.relative(intercept, dimensions).display(), minimap.ratio(dimensions).length() * 4)
-                if closest_point is None:
-                    closest_point = intercept
-                elif player1.position.distance(intercept) < player1.position.distance(closest_point):
-                    closest_point = intercept
-
-        if not closest_point is None:
-            distance = player1.position.distance(closest_point)
-            bar_dimensions = vec2((dimensions.x * (1/len(rays))+1), dimensions.y * (10/distance))
-            position = vec2(dimensions.x * (i/len(rays)), (dimensions.y / 2) -  bar_dimensions.y/2)
-            rect = pygame.Rect(position.x, position.y, bar_dimensions.x, bar_dimensions.y)
-            colour = 255 * colourDistanceMultiplier(distance, 20)
-            pygame.draw.rect(window, (colour, colour, colour), rect)
-
-    '''
-        Check world
-    '''
-
-    '''
-    for x in range(world.dimensions.x):
-        for y in range(world.dimensions.y):
-            square = world.getSquare(vec2(x, y))
-
-            if not square is None:
-                occupation = square.occupation
-                
-                if not occupation.display is None:
-                    for boundary in occupation.display:
-                      intercept = boundary.intercept()
-    '''
-
-
-    '''
-        Display minimap
-    '''
-
-    rect = pygame.Rect(minimap.position.x, minimap.position.y, minimap.display_dimensions.x, minimap.display_dimensions.y)
-    pygame.draw.rect(window, (10, 10, 10), rect)
-
-    for wall in walls:
-        colour = (255, 255, 255) # white
-        start = minimap.relative(wall.start, dimensions).display()
-        finish = minimap.relative(wall.finish, dimensions).display()
-        width = math.ceil(minimap.ratio(dimensions).length() * 5)
-        pygame.draw.line(window, colour, start, finish, width=width)
-
-    for entity in entities:
+def entityHandler():
+    # Player updates
+    RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
+    
+    # Entity updates
+    for entity in ENTITIES:
         entity.tick()
-        
-    pygame.draw.circle(window, (255, 255, 60), minimap.relative(player1.position, dimensions).display(), minimap.ratio(dimensions).length() * player1.boundingbox.radius) # draw the player
 
-    pygame.display.update() # Update the window displayed
-    window.fill((0, 0, 0))
+# A soup of all the things that need to be done per tick.
+def computation():
+    eventHandler()
+    keystrokeHandler()
+    entityHandler()
+
+'''
+    THREAD HANDLER
+'''
+
+async def tick():
+    # Record initial time before code execution
+    time_initial = time.time()
+
+    # Fat CPU computation
+    computation()
+
+    # Record time after code execution and compare difference to ticks.
+    time_post = time.time()
+    time_difference = time_post - time_initial
+    if time_difference < (1/TICK_FREQUENCY):
+        time.sleep((1/TICK_FREQUENCY) - time_difference) # pause execution until the tick is done
+    else:
+        warnings.warn(f'Couldn\'t keep up! Running {time_difference} behind expected interval of {TICK_FREQUENCY} ticks per second.', RuntimeWarning)
+    
+
+async def main():
+    while True:
+        await tick()
+
+asyncio.run(main()) # init

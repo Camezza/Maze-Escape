@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from geometry import vec2
+from classes.geometry import vec2
 
 '''
     A class for managing multiple dynamic interfaces on a single window
