@@ -65,9 +65,9 @@ class line:
         finish = self.finish.add(position.x, position.y)
         return line(start, finish)
 
-    def relative(self, dimensions: vec2, absolute_dimensions: vec2):
-        start = vec2((self.start.x/dimensions.x) * absolute_dimensions.x, (self.start.y/dimensions.y) * absolute_dimensions.y)
-        finish = vec2((self.finish.x/dimensions.x) * absolute_dimensions.x, (self.finish.y/dimensions.y) * absolute_dimensions.y)
+    def scale(self, reference_dimensions: vec2, absolute_dimensions: vec2):
+        start = vec2((self.start.x/reference_dimensions.x) * absolute_dimensions.x, (self.start.y/reference_dimensions.y) * absolute_dimensions.y)
+        finish = vec2((self.finish.x/reference_dimensions.x) * absolute_dimensions.x, (self.finish.y/reference_dimensions.y) * absolute_dimensions.y)
         return line(start, finish)
 
     def intercept(self, line):

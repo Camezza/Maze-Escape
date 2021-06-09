@@ -1,3 +1,12 @@
+'''
+<+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+>
+
+"Maze Escape" 
+- Written by 51896
+
+<+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+><+>
+'''
+
 # Miscellaneous modules
 import pygame
 import math
@@ -42,6 +51,14 @@ RENDER_RESOLUTION = 60
 RAYS = None
 
 '''
+    GLOBAL FUNCTIONS
+'''
+def toWorldCoordinates(position: vec2) -> vec2: # converts window to world coordinates
+    return vec2((position.x/WINDOW_DIMENSIONS.x) * WORLD_DIMENSIONS.x, (position.y/WINDOW_DIMENSIONS.y) * WORLD_DIMENSIONS.y)
+def toWindowCoordinates(position: vec2) -> vec2: # converts world to window coordinates (used for drawing, intercepts, collsions, etc.)
+    return vec2((position.x/WORLD_DIMENSIONS.x) * WINDOW_DIMENSIONS.x, (position.y/WORLD_DIMENSIONS.y) * WINDOW_DIMENSIONS.y)
+
+'''
     INITIALISATION
 '''
 
@@ -67,27 +84,29 @@ def keystrokeHandler():
             velocity = vec2(0, 0)
 
             if key[pygame.K_a]:
-                velocity.x -= 0.02
+                velocity.x -= 1
             if key[pygame.K_d]:
-                velocity.x += 0.02
+                velocity.x += 1
             if key[pygame.K_w]:
-                velocity.y -= 0.02
+                velocity.y -= 1
             if key[pygame.K_s]:
-                velocity.y += 0.02
+                velocity.y += 1
 
             # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
             relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
             PLAYER.velocity = PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
 
         if key[pygame.K_LEFT]:
-            PLAYER.yaw = PLAYER.yaw.add(PI/180)
+            PLAYER.yaw = PLAYER.yaw.add((PI/180) * 10)
         if key[pygame.K_RIGHT]:
-            PLAYER.yaw = PLAYER.yaw.subtract(PI/180)
+            PLAYER.yaw = PLAYER.yaw.subtract((PI/180) * 10)
 
 def entityHandler():
     # Player updates
     global RAYS
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
+    PLAYER.tick()
+    DRAW_QUEUE.append(illustration(pygame.draw.circle, (WINDOW, (255, 255, 0), PLAYER.position.display(), PLAYER.boundingbox.radius)))
     
     # Entity updates
     for entity in ENTITIES:
@@ -105,19 +124,20 @@ def terrainHandler():
                     continue
 
                 for boundary in square.occupation.boundingbox.boundaries:
-                    boundary_reference = boundary.offset(square.reference_position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
-                    intercept = raycast.intercept(boundary_reference)
-
-                    if not intercept is None:
-                        print(intercept)
-                    else:
-                        print(raycast)
+                    boundary_position = toWindowCoordinates(square.position)
+                    boundary_offset = boundary.offset(boundary_position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
+                    intercept = raycast.intercept(boundary_offset)
+                    DRAW_QUEUE.append(illustration(pygame.draw.line, (WINDOW, (255, 255, 255), boundary_offset.start.display(), boundary_offset.finish.display(), 2)))
 
 def drawHandler():
+    WINDOW.fill((0, 0, 0)) # Clear the current screen
+
     global DRAW_QUEUE
     for runnable in DRAW_QUEUE:
         runnable.draw()
+
     DRAW_QUEUE = []
+    pygame.display.update() # Update the window displayed
     
                 
 # A soup of all the things that need to be done per tick.
@@ -127,7 +147,6 @@ def computation():
     entityHandler()
     #terrainHandler()
     drawHandler()
-    DRAW_QUEUE.append(illustration(pygame.draw.line, (WINDOW, (255, 255, 255), (0, 0), (WINDOW_DIMENSIONS.x, WINDOW_DIMENSIONS.y))))
 
 '''
     THREAD HANDLER
@@ -146,7 +165,7 @@ async def tick():
     if time_difference < (1/TICK_FREQUENCY):
         time.sleep((1/TICK_FREQUENCY) - time_difference) # pause execution until the tick is done
     else:
-        warnings.warn(f'Couldn\'t keep up! Running {time_difference} behind expected interval of {TICK_FREQUENCY} ticks per second.', RuntimeWarning)
+        warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning)
     
 
 async def main():

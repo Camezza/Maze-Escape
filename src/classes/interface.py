@@ -11,7 +11,7 @@ class illustration:
     draw_parameters: Tuple
 
     def draw(self):
-        self.draw_func(self.draw_parameters)
+        self.draw_func(*self.draw_parameters)
 
 '''
     A class for managing multiple dynamic interfaces on a single window

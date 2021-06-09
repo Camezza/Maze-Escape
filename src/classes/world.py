@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 from classes.geometry import vec2, line
 
-FRICTION = 1.05
+FRICTION = 1.5
 
 '''
     Objects, collision, etc
@@ -40,7 +40,6 @@ class polygon(object):
 @dataclass
 class square:
     position: vec2
-    reference_position: vec2
     occupation: Optional[polygon] = None
 
     def setOccupation(self, occupation: object):
@@ -49,7 +48,6 @@ class square:
 @dataclass
 class terrain:
     dimensions: vec2
-    reference_dimensions: vec2
     grid: List[List[square]] = None
 
     '''
@@ -63,8 +61,7 @@ class terrain:
             # fill in y axis
             for y in range(self.dimensions.y):
                 position = vec2(x, y)
-                reference_position = vec2((x/self.dimensions.x) * self.reference_dimensions.x, (y/self.dimensions.y) * self.reference_dimensions.y)
-                grid[x].append(square(position, reference_position))
+                grid[x].append(square(position))
 
         return grid
 
