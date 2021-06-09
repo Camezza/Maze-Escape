@@ -105,16 +105,29 @@ def terrainHandler():
                     continue
 
                 for boundary in square.occupation.boundingbox.boundaries:
-                    boundary_reference = boundary.offset(square.reference_position)
-                    print(boundary_reference)
-                    
+                    boundary_reference = boundary.offset(square.reference_position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
+                    intercept = raycast.intercept(boundary_reference)
+
+                    if not intercept is None:
+                        print(intercept)
+                    else:
+                        print(raycast)
+
+def drawHandler():
+    global DRAW_QUEUE
+    for runnable in DRAW_QUEUE:
+        runnable.draw()
+    DRAW_QUEUE = []
+    
                 
 # A soup of all the things that need to be done per tick.
 def computation():
     eventHandler()
     keystrokeHandler()
     entityHandler()
-    terrainHandler()
+    #terrainHandler()
+    drawHandler()
+    DRAW_QUEUE.append(illustration(pygame.draw.line, (WINDOW, (255, 255, 255), (0, 0), (WINDOW_DIMENSIONS.x, WINDOW_DIMENSIONS.y))))
 
 '''
     THREAD HANDLER
