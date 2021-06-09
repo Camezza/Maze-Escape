@@ -13,7 +13,7 @@ import warnings
 from classes.world import terrain, polygon
 from classes.geometry import vec2, line, PI
 from classes.entities import boundingbox, entity
-from classes.interface import canvas, colourDistanceMultiplier
+from classes.interface import canvas, illustration, colourDistanceMultiplier
 
 '''
     GLOBAL DEFINITIONS
@@ -22,11 +22,14 @@ from classes.interface import canvas, colourDistanceMultiplier
 TICK_FREQUENCY = 20
 
 # Display
-WINDOW_DIMENSIONS = vec2(1920, 1080) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
+WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
 WORLD_DIMENSIONS = vec2(100, 100) # World coordinate dimensions, affects how objects are oriented on a cartesian map
 MINIMAP = canvas(vec2(10, 10), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS.divide(4, 4))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
+
+# Drawing
+DRAW_QUEUE: List[illustration] = []
 
 # World
 WORLD = terrain(WORLD_DIMENSIONS, WINDOW_DIMENSIONS)
@@ -36,7 +39,17 @@ ENTITIES: List[entity] = []
 # 3D View
 RENDER_DISTANCE = 400
 RENDER_RESOLUTION = 60
-RAYS: List[line] = None
+RAYS = None
+
+'''
+    INITIALISATION
+'''
+
+def init():
+    global RAYS
+    RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
+    WORLD.getSquare(vec2(10, 10)).setOccupation(polygon(boundingbox(5)))
+    WORLD.getSquare(vec2(30, 30)).setOccupation(polygon(boundingbox(10)))
 
 '''
     MAIN PROCESS
@@ -44,7 +57,7 @@ RAYS: List[line] = None
 
 # Processes high level window interaction events from the user.
 def eventHandler():
-    for event in pygame.event.get(): # Retreive all queued events. Must be ran to display a window
+    for event in pygame.event.get(): # Retreive all queued events. Must be ran to display a window (apparently)
         pass
 
 # Reads combinations of keystrokes and handles them accordingly
@@ -73,17 +86,35 @@ def keystrokeHandler():
 
 def entityHandler():
     # Player updates
+    global RAYS
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
     
     # Entity updates
     for entity in ENTITIES:
         entity.tick()
 
+def terrainHandler():
+    # Find where each player raycast intercepts with terrain and display
+    for raycast in RAYS: 
+        for x in range(WORLD_DIMENSIONS.x):
+            for y in range(WORLD_DIMENSIONS.y):
+                world_position = vec2(x, y)
+                square = WORLD.getSquare(world_position)
+
+                if square.occupation is None:
+                    continue
+
+                for boundary in square.occupation.boundingbox.boundaries:
+                    boundary_reference = boundary.offset(square.reference_position)
+                    print(boundary_reference)
+                    
+                
 # A soup of all the things that need to be done per tick.
 def computation():
     eventHandler()
     keystrokeHandler()
     entityHandler()
+    terrainHandler()
 
 '''
     THREAD HANDLER
@@ -106,6 +137,7 @@ async def tick():
     
 
 async def main():
+    init()
     while True:
         await tick()
 

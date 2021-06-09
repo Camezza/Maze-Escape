@@ -1,5 +1,17 @@
+from typing import Callable, Tuple
 from dataclasses import dataclass
 from classes.geometry import vec2
+
+'''
+    Allows drawing functions to be queued so they can be displayed in correct order
+'''
+@dataclass
+class illustration:
+    draw_func: Callable
+    draw_parameters: Tuple
+
+    def draw(self):
+        self.draw_func(self.draw_parameters)
 
 '''
     A class for managing multiple dynamic interfaces on a single window

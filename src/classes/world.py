@@ -11,7 +11,7 @@ FRICTION = 1.05
 @dataclass
 class boundingbox:
     radius: int
-    boundaries: Optional[List[vec2]] = None
+    boundaries: Optional[List[line]] = None
 
     def __post_init__(self):
         if self.boundaries is None: # Most entities don't require specialised bounding box
@@ -35,12 +35,12 @@ class polygon(object):
             self.display = self.boundingbox.boundaries
 
 '''
-    Coordinate & space occupation
+    Coordinate occupation
 '''
-
 @dataclass
 class square:
-    absolute: vec2
+    position: vec2
+    reference_position: vec2
     occupation: Optional[polygon] = None
 
     def setOccupation(self, occupation: object):
@@ -49,44 +49,33 @@ class square:
 @dataclass
 class terrain:
     dimensions: vec2
-    absolute_dimensions: vec2
+    reference_dimensions: vec2
     grid: List[List[square]] = None
 
     '''
         Define grid for own coordinates
     '''
-    def generate_grid(self):
+    def generate_grid(self) -> List[List[square]]:
         grid: List[List[square]] = []
         # fill in x axis
         for x in range(self.dimensions.x):
             grid.append([])
             # fill in y axis
             for y in range(self.dimensions.y):
-                grid[x].append(None)
+                position = vec2(x, y)
+                reference_position = vec2((x/self.dimensions.x) * self.reference_dimensions.x, (y/self.dimensions.y) * self.reference_dimensions.y)
+                grid[x].append(square(position, reference_position))
 
         return grid
 
     '''
         Retrieves a square from a defined terrain. Returns None if coordinate doesn't exist
     '''
-    def getSquare(self, vec2: vec2):
+    def getSquare(self, vec2: vec2) -> square:
         try:
             return self.grid[vec2.x][vec2.y]
         except AttributeError:
             raise Exception('Could not retrieve square that is not in coordinate scope')
-
-    def setSquare(self, relative: vec2, object: object):
-        square_instance = self.getSquare(relative)
-        try:
-            if square_instance is None:
-                # gather the square's relative positions to be displayed on the window
-                relative_position_X = (relative.x / self.dimensions.x) * self.absolute_dimensions.x
-                relative_position_Y = (relative.y / self.dimensions.y) * self.absolute_dimensions.y
-                self.grid[relative.x][relative.y] = square(vec2(relative_position_X, relative_position_Y), object)
-            elif square_instance.occupation is None:
-                self.grid[relative.x][relative.y].occupation = object
-        except AttributeError:
-            raise Exception('Cannot set square of type undefined')
 
     def __post_init__(self):
         self.grid = self.generate_grid()
