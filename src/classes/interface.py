@@ -10,8 +10,8 @@ class illustration:
     draw_func: Callable
     draw_parameters: Tuple
 
-    def draw(self):
-        self.draw_func(*self.draw_parameters)
+    def draw(self, surface):
+        self.draw_func(surface, *self.draw_parameters)
 
 '''
     A class for managing multiple dynamic interfaces on a single window

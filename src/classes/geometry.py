@@ -38,6 +38,9 @@ class vec2:
     def divide(self, x: float, y: float):
         return vec2(self.x / x, self.y / y)
 
+    def floor(self):
+        return vec2(int(self.x), int(self.y))
+
     def length(self):
         return ((self.x ** 2) + (self.y ** 2)) ** (1/2)
 

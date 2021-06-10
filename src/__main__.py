@@ -14,9 +14,11 @@ from typing import List
 from pygame.locals import *
 
 # Modules for threading
+import multiprocessing
 import asyncio
 import time
 import warnings
+from concurrent.futures import ProcessPoolExecutor
 
 # Local modules
 from classes.world import terrain, polygon
@@ -65,11 +67,10 @@ def toWindowCoordinates(position: vec2) -> vec2: # converts world to window coor
 def init():
     global RAYS
     RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
-    WORLD.getSquare(vec2(10, 10)).setOccupation(polygon(boundingbox(5)))
-    WORLD.getSquare(vec2(30, 30)).setOccupation(polygon(boundingbox(10)))
+    WORLD.getSquare(vec2(0, 0)).setOccupation(polygon(boundingbox(50)))
 
 '''
-    MAIN PROCESS
+    MAIN COMPUTATION METHODS
 '''
 
 # Processes high level window interaction events from the user.
@@ -106,35 +107,46 @@ def entityHandler():
     global RAYS
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
     PLAYER.tick()
-    DRAW_QUEUE.append(illustration(pygame.draw.circle, (WINDOW, (255, 255, 0), PLAYER.position.display(), PLAYER.boundingbox.radius)))
+    DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), PLAYER.position.add(3, 3).display(), PLAYER.boundingbox.radius)))
     
     # Entity updates
     for entity in ENTITIES:
         entity.tick()
 
 def terrainHandler():
-    # Find where each player raycast intercepts with terrain and display
-    for raycast in RAYS: 
-        for x in range(WORLD_DIMENSIONS.x):
-            for y in range(WORLD_DIMENSIONS.y):
-                world_position = vec2(x, y)
-                square = WORLD.getSquare(world_position)
+    '''
+        Check for player raycast intercepts and display accordingly
+    '''
+    for raycast in RAYS:
+        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), raycast.start.display(), raycast.finish.display(), 1)))
+        square = WORLD.getSquare(toWorldCoordinates(PLAYER.position).floor())
 
-                if square.occupation is None:
-                    continue
+        if square is None or square.occupation is None:
+            continue
 
-                for boundary in square.occupation.boundingbox.boundaries:
-                    boundary_position = toWindowCoordinates(square.position)
-                    boundary_offset = boundary.offset(boundary_position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
-                    intercept = raycast.intercept(boundary_offset)
-                    DRAW_QUEUE.append(illustration(pygame.draw.line, (WINDOW, (255, 255, 255), boundary_offset.start.display(), boundary_offset.finish.display(), 2)))
+        for boundary in square.occupation.boundingbox.boundaries:
+            boundary_position = toWindowCoordinates(square.position)
+            boundary_offset = boundary.offset(boundary_position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
+            intercept = raycast.intercept(boundary_offset)
+
+            if intercept is None:
+                continue
+
+            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), intercept.display(), 5, 5)))
+
+    for x in range(WORLD_DIMENSIONS.x):
+        for y in range(WORLD_DIMENSIONS.y):
+            position = vec2(x, y)
+            square = WORLD.getSquare(position)
+    DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), boundary_offset.start.display(), boundary_offset.finish.display(), 1)))
 
 def drawHandler():
     WINDOW.fill((0, 0, 0)) # Clear the current screen
 
     global DRAW_QUEUE
     for runnable in DRAW_QUEUE:
-        runnable.draw()
+        print(runnable)
+        runnable.draw(WINDOW)
 
     DRAW_QUEUE = []
     pygame.display.update() # Update the window displayed
@@ -145,14 +157,14 @@ def computation():
     eventHandler()
     keystrokeHandler()
     entityHandler()
-    #terrainHandler()
+    terrainHandler()
     drawHandler()
 
 '''
     THREAD HANDLER
 '''
 
-async def tick():
+def tick():
     # Record initial time before code execution
     time_initial = time.time()
 
@@ -167,10 +179,10 @@ async def tick():
     else:
         warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning)
     
-
-async def main():
-    init()
+def threadHandler():
     while True:
-        await tick()
-
-asyncio.run(main()) # init
+        tick()
+        
+if __name__ == '__main__':
+    init()
+    threadHandler()
