@@ -16,10 +16,10 @@ class boundingbox:
     def __post_init__(self):
         if self.boundaries is None: # Most entities don't require specialised bounding box
             self.boundaries = [
-                line(vec2(0, 0), vec2(0, self.radius)),
-                line(vec2(0, self.radius), vec2(self.radius, self.radius)),
-                line(vec2(self.radius, self.radius), vec2(self.radius, 0)),
-                line(vec2(self.radius, 0), vec2(0, 0)),
+                line(vec2(self.radius, self.radius), vec2(-self.radius, self.radius)),
+                line(vec2(-self.radius, self.radius), vec2(-self.radius, -self.radius)),
+                line(vec2(-self.radius, -self.radius), vec2(self.radius, -self.radius)),
+                line(vec2(self.radius, -self.radius), vec2(self.radius, self.radius)),
             ]
 
 @dataclass

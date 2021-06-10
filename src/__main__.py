@@ -35,7 +35,7 @@ TICK_FREQUENCY = 20
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
 WORLD_DIMENSIONS = vec2(100, 100) # World coordinate dimensions, affects how objects are oriented on a cartesian map
-MINIMAP = canvas(vec2(10, 10), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS.divide(4, 4))
+MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y, WINDOW_DIMENSIONS.y))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
 
@@ -48,8 +48,8 @@ PLAYER = entity(vec2(0, 0), boundingbox(5))
 ENTITIES: List[entity] = []
 
 # 3D View
-RENDER_DISTANCE = 400
-RENDER_RESOLUTION = 60
+RENDER_DISTANCE = 20
+RENDER_RESOLUTION = 30
 RAYS = None
 
 '''
@@ -67,7 +67,7 @@ def toWindowCoordinates(position: vec2) -> vec2: # converts world to window coor
 def init():
     global RAYS
     RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
-    WORLD.getSquare(vec2(0, 0)).setOccupation(polygon(boundingbox(50)))
+    WORLD.getSquare(vec2(30, 30)).setOccupation(polygon(boundingbox(0.5)))
 
 '''
     MAIN COMPUTATION METHODS
@@ -106,8 +106,10 @@ def entityHandler():
     # Player updates
     global RAYS
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
+
+    # PROBLEM: PLAYER.position is being mutated, and therefore the drawing position differs from the raycasts.
+    DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius)))
     PLAYER.tick()
-    DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), PLAYER.position.add(3, 3).display(), PLAYER.boundingbox.radius)))
     
     # Entity updates
     for entity in ENTITIES:
@@ -115,18 +117,17 @@ def entityHandler():
 
 def terrainHandler():
     '''
-        Check for player raycast intercepts and display accordingly
+        Check for player raycast intercepts and display accordingly.
     '''
     for raycast in RAYS:
-        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), raycast.start.display(), raycast.finish.display(), 1)))
+        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1)))
         square = WORLD.getSquare(toWorldCoordinates(PLAYER.position).floor())
 
         if square is None or square.occupation is None:
             continue
 
         for boundary in square.occupation.boundingbox.boundaries:
-            boundary_position = toWindowCoordinates(square.position)
-            boundary_offset = boundary.offset(boundary_position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
+            boundary_offset = boundary.offset(square.position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
             intercept = raycast.intercept(boundary_offset)
 
             if intercept is None:
@@ -134,18 +135,26 @@ def terrainHandler():
 
             DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), intercept.display(), 5, 5)))
 
+    '''
+        Draw the minimap.
+    '''
     for x in range(WORLD_DIMENSIONS.x):
         for y in range(WORLD_DIMENSIONS.y):
             position = vec2(x, y)
             square = WORLD.getSquare(position)
-    DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), boundary_offset.start.display(), boundary_offset.finish.display(), 1)))
+            
+            if square.occupation is None:
+                continue
+
+            for boundary in square.occupation.boundingbox.boundaries:
+                boundary_offset = boundary.offset(square.position)
+                DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), boundary_offset.start.display(), boundary_offset.finish.display(), 5)))
 
 def drawHandler():
     WINDOW.fill((0, 0, 0)) # Clear the current screen
 
     global DRAW_QUEUE
     for runnable in DRAW_QUEUE:
-        print(runnable)
         runnable.draw(WINDOW)
 
     DRAW_QUEUE = []
@@ -156,8 +165,8 @@ def drawHandler():
 def computation():
     eventHandler()
     keystrokeHandler()
-    entityHandler()
     terrainHandler()
+    entityHandler()
     drawHandler()
 
 '''
