@@ -35,7 +35,7 @@ TICK_FREQUENCY = 20
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
 WORLD_DIMENSIONS = vec2(100, 100) # World coordinate dimensions, affects how objects are oriented on a cartesian map
-MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y, WINDOW_DIMENSIONS.y))
+MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y/2, WINDOW_DIMENSIONS.y/2))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
 
@@ -67,7 +67,8 @@ def toWindowCoordinates(position: vec2) -> vec2: # converts world to window coor
 def init():
     global RAYS
     RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
-    WORLD.getSquare(vec2(30, 30)).setOccupation(polygon(boundingbox(0.5)))
+    for i in range(100):
+        WORLD.getSquare(vec2(i, 30)).setOccupation(polygon(boundingbox(0.5)))
 
 '''
     MAIN COMPUTATION METHODS
@@ -148,7 +149,10 @@ def terrainHandler():
 
             for boundary in square.occupation.boundingbox.boundaries:
                 boundary_offset = boundary.offset(square.position)
-                DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), boundary_offset.start.display(), boundary_offset.finish.display(), 5)))
+                DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1)))
+
+def interfaceHandler():
+    DRAW_QUEUE.append(illustration(pygame.draw.rect, ((255, 255, 255), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y))))
 
 def drawHandler():
     WINDOW.fill((0, 0, 0)) # Clear the current screen
@@ -167,6 +171,7 @@ def computation():
     keystrokeHandler()
     terrainHandler()
     entityHandler()
+    interfaceHandler()
     drawHandler()
 
 '''
