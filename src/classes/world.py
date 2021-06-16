@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, List
 from classes.geometry import vec2, line
+from math import copysign
 
 FRICTION = 1.5
 
@@ -73,6 +74,32 @@ class terrain:
             return self.grid[vec2.x][vec2.y]
         except AttributeError:
             raise Exception('Could not retrieve square that is not in coordinate scope')
+
+    def getAdjacentSquares(self, vec2: vec2) -> List[square]:
+        def corner(radius_x: int, radius_y: int) -> List[vec2]:
+            coordinates = []
+            for x in range(1, abs(radius_x)):
+                coordinates.append(vec2(copysign(x, x_radius), y_radius))
+
+                if x == abs(x_radius) - 1:
+                    for y in range(1, abs(radius_y)):
+                        coordinates.append(vec2(x_radius, copysign(y, y_radius)))
+            return coordinates
+
+        
+        def directional(radius: int) -> List[vec2]:
+            coordinates = []
+            CARDINAL = [[1, 0],[0, 1],[-1, 0],[0, -1]]
+            DIAGONAL = [[1, 1],[-1, 1],[-1, -1],[1, -1]]
+
+            for i in range(4):
+                cardinal_coordinate = vec2(CARDINAL[i][0] * radius, CARDINAL[i][1] * radius)
+                diagonal_coordinate = vec2(DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
+                miscellaneous_coordinates = retreiveCornerVec2(diagonal_coordinate.x, diagonal_coordinate.y)
+                miscellaneous_coordinates.extend([cardinal_coordinate, diagonal_coordinate])
+                coordinates.extend(miscellaneous_coordinates)
+            
+            return coordinates
 
     def __post_init__(self):
         self.grid = self.generate_grid()
