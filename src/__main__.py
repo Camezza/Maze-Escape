@@ -41,6 +41,8 @@ WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise windo
 
 # Drawing
 DRAW_QUEUE: List[illustration] = []
+MINIMAP_PRIORITY = 1000
+PERSPECTIVE_PRIORITY = 100
 
 # World
 WORLD = terrain(WORLD_DIMENSIONS, WINDOW_DIMENSIONS)
@@ -50,6 +52,7 @@ ENTITIES: List[entity] = []
 # 3D View
 RENDER_DISTANCE = 20
 RENDER_RESOLUTION = 30
+INTERCEPTS = []
 RAYS = None
 
 '''
@@ -57,8 +60,6 @@ RAYS = None
 '''
 def toWorldCoordinates(position: vec2) -> vec2: # converts window to world coordinates
     return vec2((position.x/WINDOW_DIMENSIONS.x) * WORLD_DIMENSIONS.x, (position.y/WINDOW_DIMENSIONS.y) * WORLD_DIMENSIONS.y)
-def toWindowCoordinates(position: vec2) -> vec2: # converts world to window coordinates (used for drawing, intercepts, collsions, etc.)
-    return vec2((position.x/WORLD_DIMENSIONS.x) * WINDOW_DIMENSIONS.x, (position.y/WORLD_DIMENSIONS.y) * WINDOW_DIMENSIONS.y)
 
 '''
     INITIALISATION
@@ -109,7 +110,7 @@ def entityHandler():
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
 
     # PROBLEM: PLAYER.position is being mutated, and therefore the drawing position differs from the raycasts.
-    DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius)))
+    DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius), MINIMAP_PRIORITY + 5))
     PLAYER.tick()
     
     # Entity updates
@@ -121,8 +122,8 @@ def terrainHandler():
         Check for player raycast intercepts and display accordingly.
     '''
     for raycast in RAYS:
-        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1)))
-        square = WORLD.getSquare(toWorldCoordinates(PLAYER.position).floor())
+        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 4))
+        square = WORLD.getSquare(PLAYER.position.floor())
 
         if square is None or square.occupation is None:
             continue
@@ -134,7 +135,7 @@ def terrainHandler():
             if intercept is None:
                 continue
 
-            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), intercept.display(), 5, 5)))
+            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 3))
 
     '''
         Draw the minimap.
@@ -149,19 +150,32 @@ def terrainHandler():
 
             for boundary in square.occupation.boundingbox.boundaries:
                 boundary_offset = boundary.offset(square.position)
-                DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1)))
+                DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 2))
 
 def interfaceHandler():
-    DRAW_QUEUE.append(illustration(pygame.draw.rect, ((255, 255, 255), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y))))
+    DRAW_QUEUE.append(illustration(pygame.draw.rect, ((0, 0, 0), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y)), MINIMAP_PRIORITY + 1))
+    pass
 
 def drawHandler():
     WINDOW.fill((0, 0, 0)) # Clear the current screen
 
     global DRAW_QUEUE
-    for runnable in DRAW_QUEUE:
-        runnable.draw(WINDOW)
+    while len(DRAW_QUEUE) > 0:
+        highest_priority = -1 # the lowest number has the highest priority
+        highest_priority_index = -1
 
-    DRAW_QUEUE = []
+        for index in range(len(DRAW_QUEUE)):
+            runnable = DRAW_QUEUE[index]
+
+            # Higher priority drawable found
+            if highest_priority < 0 or runnable.priority < highest_priority:
+                highest_priority = runnable.priority
+                highest_priority_index = index
+
+        # Draw the highest priority first
+        DRAW_QUEUE[highest_priority_index].draw(WINDOW)
+        DRAW_QUEUE.pop(highest_priority_index)
+
     pygame.display.update() # Update the window displayed
     
                 
@@ -191,7 +205,7 @@ def tick():
     if time_difference < (1/TICK_FREQUENCY):
         time.sleep((1/TICK_FREQUENCY) - time_difference) # pause execution until the tick is done
     else:
-        warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning)
+        warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning, stacklevel=4)
     
 def threadHandler():
     while True:

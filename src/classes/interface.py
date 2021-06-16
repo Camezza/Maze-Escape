@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Optional
 from dataclasses import dataclass
 from classes.geometry import vec2
 
@@ -9,6 +9,7 @@ from classes.geometry import vec2
 class illustration:
     draw_func: Callable
     draw_parameters: Tuple
+    priority: Optional[int] = 0
 
     def draw(self, surface):
         self.draw_func(surface, *self.draw_parameters)
