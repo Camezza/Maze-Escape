@@ -3,7 +3,37 @@ from typing import Optional, List
 from classes.geometry import vec2, line
 from math import copysign
 
+'''
+    Global
+'''
+
 FRICTION = 1.5
+CARDINAL = [[1, 0],[0, 1],[-1, 0],[0, -1]]
+DIAGONAL = [[1, 1],[-1, 1],[-1, -1],[1, -1]]
+'''
+    Get adjacent coordinates
+'''
+def adjacentCorner(position: vec2, radius_x: int, radius_y: int) -> List[vec2]:
+    coordinates = []
+    for x in range(1, abs(radius_x)):
+        coordinates.append(position.add(copysign(x, radius_x), radius_y))
+
+        if x == abs(radius_x) - 1:
+            for y in range(1, abs(radius_y)):
+                coordinates.append(position.add(radius_x, copysign(y, radius_y)))
+    return coordinates
+
+def adjacentDirectional(position: vec2, radius: int) -> List[vec2]:
+    coordinates = []
+
+    for i in range(4):
+        cardinal_coordinate = position.add(CARDINAL[i][0] * radius, CARDINAL[i][1] * radius)
+        diagonal_coordinate = position.add(DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
+        miscellaneous_coordinates = adjacentCorner(position, diagonal_coordinate.x, diagonal_coordinate.y)
+        miscellaneous_coordinates.extend([cardinal_coordinate, diagonal_coordinate])
+        coordinates.extend(miscellaneous_coordinates)
+    
+    return coordinates
 
 '''
     Objects, collision, etc
@@ -69,37 +99,26 @@ class terrain:
     '''
         Retrieves a square from a defined terrain. Returns None if coordinate doesn't exist
     '''
-    def getSquare(self, vec2: vec2) -> square:
+    def getSquare(self, position: vec2) -> square:
         try:
-            return self.grid[vec2.x][vec2.y]
+            return self.grid[position.x][position.y]
         except AttributeError:
-            raise Exception('Could not retrieve square that is not in coordinate scope')
+            raise RuntimeError('Could not retrieve square that is not in coordinate scope')
 
-    def getAdjacentSquares(self, vec2: vec2) -> List[square]:
-        def corner(radius_x: int, radius_y: int) -> List[vec2]:
-            coordinates = []
-            for x in range(1, abs(radius_x)):
-                coordinates.append(vec2(copysign(x, x_radius), y_radius))
+    def getAdjacentSquares(self, position: vec2, radius: int) -> List[square]:
+        coordinates = []
+        for iterator in range(radius):
+            coordinates.extend(adjacentDirectional(position, radius + 1))
 
-                if x == abs(x_radius) - 1:
-                    for y in range(1, abs(radius_y)):
-                        coordinates.append(vec2(x_radius, copysign(y, y_radius)))
-            return coordinates
-
+        squares = []
+        for position in coordinates:
+            try: # simply push if no error
+                square = self.getSquare(position)
+                squares.append(square)
+            except:
+                pass
         
-        def directional(radius: int) -> List[vec2]:
-            coordinates = []
-            CARDINAL = [[1, 0],[0, 1],[-1, 0],[0, -1]]
-            DIAGONAL = [[1, 1],[-1, 1],[-1, -1],[1, -1]]
-
-            for i in range(4):
-                cardinal_coordinate = vec2(CARDINAL[i][0] * radius, CARDINAL[i][1] * radius)
-                diagonal_coordinate = vec2(DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
-                miscellaneous_coordinates = retreiveCornerVec2(diagonal_coordinate.x, diagonal_coordinate.y)
-                miscellaneous_coordinates.extend([cardinal_coordinate, diagonal_coordinate])
-                coordinates.extend(miscellaneous_coordinates)
+        return squares
             
-            return coordinates
-
     def __post_init__(self):
         self.grid = self.generate_grid()

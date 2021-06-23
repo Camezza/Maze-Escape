@@ -48,10 +48,11 @@ PERSPECTIVE_PRIORITY = 100
 WORLD = terrain(WORLD_DIMENSIONS, WINDOW_DIMENSIONS)
 PLAYER = entity(vec2(0, 0), boundingbox(5))
 ENTITIES: List[entity] = []
+LOAD_DISTANCE = 4
 
 # 3D View
 RENDER_DISTANCE = 20
-RENDER_RESOLUTION = 30
+RENDER_RESOLUTION = 10
 INTERCEPTS = []
 RAYS = None
 
@@ -122,20 +123,21 @@ def terrainHandler():
         Check for player raycast intercepts and display accordingly.
     '''
     for raycast in RAYS:
-        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 4))
-        square = WORLD.getSquare(PLAYER.position.floor())
+        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
+        squares = WORLD.getAdjacentSquares(PLAYER.position.floor(), LOAD_DISTANCE)
 
-        if square is None or square.occupation is None:
-            continue
-
-        for boundary in square.occupation.boundingbox.boundaries:
-            boundary_offset = boundary.offset(square.position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
-            intercept = raycast.intercept(boundary_offset)
-
-            if intercept is None:
+        for square in squares:
+            if square is None or square.occupation is None:
                 continue
 
-            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 3))
+            for boundary in square.occupation.boundingbox.boundaries:
+                boundary_offset = boundary.offset(square.position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
+                intercept = raycast.intercept(boundary_offset)
+
+                if intercept is None:
+                    continue
+
+                DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
 
     '''
         Draw the minimap.
