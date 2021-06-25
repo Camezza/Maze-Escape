@@ -144,3 +144,6 @@ class line:
             return vec2(x, y)
 
         return None
+
+    def midpoint(self) -> vec2:
+        return vec2((self.start.x + self.finish.x)/2, (self.start.y + self.finish.y)/2)

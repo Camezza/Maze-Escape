@@ -30,12 +30,12 @@ from classes.interface import canvas, illustration, colourDistanceMultiplier
     GLOBAL DEFINITIONS
 '''
 # Threading
-TICK_FREQUENCY = 20
+TICK_FREQUENCY = 40
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
-WORLD_DIMENSIONS = vec2(100, 100) # World coordinate dimensions, affects how objects are oriented on a cartesian map
-MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y/2, WINDOW_DIMENSIONS.y/2))
+WORLD_DIMENSIONS = vec2(50, 50) # World coordinate dimensions, affects how objects are oriented on a cartesian map
+MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y, WINDOW_DIMENSIONS.y))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
 
@@ -45,10 +45,10 @@ MINIMAP_PRIORITY = 1000
 PERSPECTIVE_PRIORITY = 100
 
 # World
-WORLD = terrain(WORLD_DIMENSIONS, WINDOW_DIMENSIONS)
+WORLD = terrain(WORLD_DIMENSIONS)
 PLAYER = entity(vec2(0, 0), boundingbox(5))
 ENTITIES: List[entity] = []
-LOAD_DISTANCE = 4
+LOAD_DISTANCE = 6
 
 # 3D View
 RENDER_DISTANCE = 20
@@ -69,7 +69,7 @@ def toWorldCoordinates(position: vec2) -> vec2: # converts window to world coord
 def init():
     global RAYS
     RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
-    for i in range(100):
+    for i in range(WORLD_DIMENSIONS.x):
         WORLD.getSquare(vec2(i, 30)).setOccupation(polygon(boundingbox(0.5)))
 
 '''
@@ -127,17 +127,26 @@ def terrainHandler():
         squares = WORLD.getAdjacentSquares(PLAYER.position.floor(), LOAD_DISTANCE)
 
         for square in squares:
+
+            #rect = pygame.Rect(MINIMAP.relative(square.position.add(0.5, 0.5), WORLD_DIMENSIONS).display(), (MINIMAP.ratio(WORLD_DIMENSIONS).x, MINIMAP.ratio(WORLD_DIMENSIONS).y))
+            #DRAW_QUEUE.append(illustration(pygame.draw.rect, ((255, 0, 255), rect), MINIMAP_PRIORITY + 10))
+
             if square is None or square.occupation is None:
                 continue
 
-            for boundary in square.occupation.boundingbox.boundaries:
-                boundary_offset = boundary.offset(square.position.subtract(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
-                intercept = raycast.intercept(boundary_offset)
+            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((0, 0, 255), MINIMAP.relative(square.occupation.boundingbox.boundaries[0].midpoint(), WORLD_DIMENSIONS).display(), 3), MINIMAP_PRIORITY + 20))
 
-                if intercept is None:
-                    continue
+            boundary = square.occupation.boundingbox.closestBoundary(PLAYER.position)
+            boundary_offset = boundary.offset(square.position)
+            intercept = raycast.intercept(boundary_offset)
 
-                DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
+            # square that has something there
+            DRAW_QUEUE.append(illustration(pygame.draw.line, ((0, 255, 0), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
+
+            if intercept is None:
+                continue
+
+            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
 
     '''
         Draw the minimap.

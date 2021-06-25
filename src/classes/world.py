@@ -29,7 +29,7 @@ def adjacentDirectional(position: vec2, radius: int) -> List[vec2]:
     for i in range(4):
         cardinal_coordinate = position.add(CARDINAL[i][0] * radius, CARDINAL[i][1] * radius)
         diagonal_coordinate = position.add(DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
-        miscellaneous_coordinates = adjacentCorner(position, diagonal_coordinate.x, diagonal_coordinate.y)
+        miscellaneous_coordinates = adjacentCorner(position, DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
         miscellaneous_coordinates.extend([cardinal_coordinate, diagonal_coordinate])
         coordinates.extend(miscellaneous_coordinates)
     
@@ -52,6 +52,19 @@ class boundingbox:
                 line(vec2(-self.radius, -self.radius), vec2(self.radius, -self.radius)),
                 line(vec2(self.radius, -self.radius), vec2(self.radius, self.radius)),
             ]
+
+    def closestBoundary(self, position: vec2):
+        closest: int = -1
+        closest_distance: float = -1
+        for i in range(len(self.boundaries)):
+            boundary = self.boundaries[i]
+            distance = boundary.midpoint().distance(position)
+            if closest < 0 or distance < closest_distance:
+                closest = i
+                closest_distance = distance
+            
+        assert closest > -1, 'Couldn\'t find closest boundary with no boundaries'
+        return self.boundaries[closest]
 
 @dataclass
 class object:
@@ -108,12 +121,12 @@ class terrain:
     def getAdjacentSquares(self, position: vec2, radius: int) -> List[square]:
         coordinates = []
         for iterator in range(radius):
-            coordinates.extend(adjacentDirectional(position, radius + 1))
+            coordinates.extend(adjacentDirectional(position, iterator + 1))
 
         squares = []
-        for position in coordinates:
+        for offset in coordinates:
             try: # simply push if no error
-                square = self.getSquare(position)
+                square = self.getSquare(offset.floor())
                 squares.append(square)
             except:
                 pass
