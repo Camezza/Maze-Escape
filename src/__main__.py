@@ -30,7 +30,7 @@ from classes.interface import canvas, illustration, colourDistanceMultiplier
     GLOBAL DEFINITIONS
 '''
 # Threading
-TICK_FREQUENCY = 40
+TICK_FREQUENCY = 10
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
@@ -52,7 +52,7 @@ LOAD_DISTANCE = 6
 
 # 3D View
 RENDER_DISTANCE = 20
-RENDER_RESOLUTION = 10
+RENDER_RESOLUTION = 30
 INTERCEPTS = []
 RAYS = None
 
@@ -134,19 +134,17 @@ def terrainHandler():
             if square is None or square.occupation is None:
                 continue
 
-            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((0, 0, 255), MINIMAP.relative(square.occupation.boundingbox.boundaries[0].midpoint(), WORLD_DIMENSIONS).display(), 3), MINIMAP_PRIORITY + 20))
+            for boundary in square.occupation.boundingbox.directional(raycast):
+                boundary_offset = boundary.offset(square.position)
+                intercept = raycast.intercept(boundary_offset)
 
-            boundary = square.occupation.boundingbox.closestBoundary(PLAYER.position)
-            boundary_offset = boundary.offset(square.position)
-            intercept = raycast.intercept(boundary_offset)
+                # square that has something there
+                DRAW_QUEUE.append(illustration(pygame.draw.line, ((0, 255, 0), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
 
-            # square that has something there
-            DRAW_QUEUE.append(illustration(pygame.draw.line, ((0, 255, 0), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
+                if intercept is None:
+                    continue
 
-            if intercept is None:
-                continue
-
-            DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
+                DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
 
     '''
         Draw the minimap.
@@ -159,7 +157,7 @@ def terrainHandler():
             if square.occupation is None:
                 continue
 
-            for boundary in square.occupation.boundingbox.boundaries:
+            for direction, boundary in square.occupation.boundingbox.boundaries.items():
                 boundary_offset = boundary.offset(square.position)
                 DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 2))
 

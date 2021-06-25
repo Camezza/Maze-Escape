@@ -42,29 +42,24 @@ def adjacentDirectional(position: vec2, radius: int) -> List[vec2]:
 @dataclass
 class boundingbox:
     radius: int
-    boundaries: Optional[List[line]] = None
+    boundaries = None
 
     def __post_init__(self):
-        if self.boundaries is None: # Most entities don't require specialised bounding box
-            self.boundaries = [
-                line(vec2(self.radius, self.radius), vec2(-self.radius, self.radius)),
-                line(vec2(-self.radius, self.radius), vec2(-self.radius, -self.radius)),
-                line(vec2(-self.radius, -self.radius), vec2(self.radius, -self.radius)),
-                line(vec2(self.radius, -self.radius), vec2(self.radius, self.radius)),
-            ]
+        self.boundaries = {
+            'NORTH': line(vec2(self.radius, self.radius), vec2(-self.radius, self.radius)),
+            'SOUTH': line(vec2(-self.radius, self.radius), vec2(-self.radius, -self.radius)),
+            'EAST': line(vec2(-self.radius, -self.radius), vec2(self.radius, -self.radius)),
+            'WEST': line(vec2(self.radius, -self.radius), vec2(self.radius, self.radius)),
+        }
 
-    def closestBoundary(self, position: vec2):
-        closest: int = -1
-        closest_distance: float = -1
-        for i in range(len(self.boundaries)):
-            boundary = self.boundaries[i]
-            distance = boundary.midpoint().distance(position)
-            if closest < 0 or distance < closest_distance:
-                closest = i
-                closest_distance = distance
+    def directional(self, line: vec2) -> List[line]:
+        boundaries = []
+        direction = line.direction()
+        for iterator in direction.split('-'):
+            boundaries.append(self.boundaries[iterator])
+        return boundaries
             
-        assert closest > -1, 'Couldn\'t find closest boundary with no boundaries'
-        return self.boundaries[closest]
+            
 
 @dataclass
 class object:

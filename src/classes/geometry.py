@@ -1,6 +1,12 @@
 import math
 from dataclasses import dataclass
+
+'''
+    GLOBAL CONSTANTS    
+'''
 PI = 22/7
+FIRST_COMPONENT_REFERENCE = ['NORTH', '', 'SOUTH']
+SECOND_COMPONENT_REFERENCE = ['EAST', '', 'WEST']
 
 @dataclass
 class angle:
@@ -145,5 +151,16 @@ class line:
 
         return None
 
-    def midpoint(self) -> vec2:
-        return vec2((self.start.x + self.finish.x)/2, (self.start.y + self.finish.y)/2)
+    def direction(self):
+        difference = self.finish.subtract(self.start.x, self.start.y)
+        first_component = int(math.copysign(1, difference.y) + 1)
+        second_component = int(math.copysign(1, difference.x) + 1)
+
+        if difference.x == 0:
+            return FIRST_COMPONENT_REFERENCE[first_component]
+        elif difference.y == 0:
+            return SECOND_COMPONENT_REFERENCE[second_component]
+        elif difference.x == 0 and difference.y == 0:
+            raise RuntimeError('Line doesn\'t have a direction! Are the line\'s start and finish vectors the same value?')
+        else:
+            return FIRST_COMPONENT_REFERENCE[first_component] + '-' + SECOND_COMPONENT_REFERENCE[second_component]
