@@ -62,11 +62,21 @@ RAYS = None
 '''
 
 def init():
+    '''
+        Determine the first set of raycasts
+    '''
     global RAYS
     RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
+
+    '''
+        Generate the world
+    '''
     for i in range(WORLD_DIMENSIONS.x):
         WORLD.getSquare(vec2(i, 30)).setOccupation(polygon(boundingbox(0.5)))
 
+    '''
+        Define intercepts as an array
+    '''
     global INTERCEPTS
     INTERCEPTS = []
 
