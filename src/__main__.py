@@ -30,7 +30,7 @@ from classes.interface import canvas, illustration, colourDistanceMultiplier
     GLOBAL DEFINITIONS
 '''
 # Threading
-TICK_FREQUENCY = 10
+TICK_FREQUENCY = 60
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
@@ -53,14 +53,9 @@ LOAD_DISTANCE = 6
 # 3D View
 RENDER_DISTANCE = 20
 RENDER_RESOLUTION = 30
-INTERCEPTS = []
+INTERCEPTS = None
 RAYS = None
 
-'''
-    GLOBAL FUNCTIONS
-'''
-def toWorldCoordinates(position: vec2) -> vec2: # converts window to world coordinates
-    return vec2((position.x/WINDOW_DIMENSIONS.x) * WORLD_DIMENSIONS.x, (position.y/WINDOW_DIMENSIONS.y) * WORLD_DIMENSIONS.y)
 
 '''
     INITIALISATION
@@ -71,6 +66,9 @@ def init():
     RAYS = PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)
     for i in range(WORLD_DIMENSIONS.x):
         WORLD.getSquare(vec2(i, 30)).setOccupation(polygon(boundingbox(0.5)))
+
+    global INTERCEPTS
+    INTERCEPTS = []
 
 '''
     MAIN COMPUTATION METHODS
@@ -83,31 +81,32 @@ def eventHandler():
 
 # Reads combinations of keystrokes and handles them accordingly
 def keystrokeHandler():
-        key = pygame.key.get_pressed()
-        if key[pygame.K_a] or key[pygame.K_d] or key[pygame.K_w] or key[pygame.K_s]:
-            velocity = vec2(0, 0)
+    key = pygame.key.get_pressed()
+    if key[pygame.K_a] or key[pygame.K_d] or key[pygame.K_w] or key[pygame.K_s]:
+        velocity = vec2(0, 0)
 
-            if key[pygame.K_a]:
-                velocity.x -= 1
-            if key[pygame.K_d]:
-                velocity.x += 1
-            if key[pygame.K_w]:
-                velocity.y -= 1
-            if key[pygame.K_s]:
-                velocity.y += 1
+        if key[pygame.K_a]:
+            velocity.x -= 1
+        if key[pygame.K_d]:
+            velocity.x += 1
+        if key[pygame.K_w]:
+            velocity.y -= 1
+        if key[pygame.K_s]:
+            velocity.y += 1
 
-            # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
-            relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
-            PLAYER.velocity = PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
+        # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
+        relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
+        PLAYER.velocity = PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
 
-        if key[pygame.K_LEFT]:
-            PLAYER.yaw = PLAYER.yaw.add((PI/180) * 10)
-        if key[pygame.K_RIGHT]:
-            PLAYER.yaw = PLAYER.yaw.subtract((PI/180) * 10)
+    if key[pygame.K_LEFT]:
+        PLAYER.yaw = PLAYER.yaw.add((PI/180) * 10)
+    if key[pygame.K_RIGHT]:
+        PLAYER.yaw = PLAYER.yaw.subtract((PI/180) * 10)
 
 def entityHandler():
-    # Player updates
     global RAYS
+
+    # Player updates
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
 
     # PROBLEM: PLAYER.position is being mutated, and therefore the drawing position differs from the raycasts.
@@ -118,13 +117,18 @@ def entityHandler():
     for entity in ENTITIES:
         entity.tick()
 
-def terrainHandler():
+def gfxHandler():
+    global RAYS
+    global INTERCEPTS
+
     '''
-        Check for player raycast intercepts and display accordingly.
+        Retrieve raycast intercepts
     '''
-    for raycast in RAYS:
-        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
+    for raycast_index in range(len(RAYS)):
+        raycast = RAYS[raycast_index]
         squares = WORLD.getAdjacentSquares(PLAYER.position.floor(), LOAD_DISTANCE)
+        INTERCEPTS.append([])
+        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
 
         for square in squares:
 
@@ -134,17 +138,34 @@ def terrainHandler():
             if square is None or square.occupation is None:
                 continue
 
-            for boundary in square.occupation.boundingbox.directional(raycast):
+            for direction, boundary in square.occupation.boundingbox.boundaries.items():
                 boundary_offset = boundary.offset(square.position)
                 intercept = raycast.intercept(boundary_offset)
 
-                # square that has something there
-                DRAW_QUEUE.append(illustration(pygame.draw.line, ((0, 255, 0), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
 
                 if intercept is None:
                     continue
 
-                DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
+                INTERCEPTS[raycast_index].append(intercept)
+    '''
+        Draw graphics based on intercepts closest to player
+    '''
+
+    for group in INTERCEPTS:
+        closest_distance = -1
+        closest_intercept= None
+
+        for intercept in group:
+            distance = PLAYER.position.distance(intercept)
+
+            if closest_intercept is None or distance < closest_distance:
+                closest_distance = distance
+                closest_intercept = intercept
+
+        if closest_intercept is None:
+            continue
+
+        DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(closest_intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
 
     '''
         Draw the minimap.
@@ -186,16 +207,26 @@ def drawHandler():
         DRAW_QUEUE.pop(highest_priority_index)
 
     pygame.display.update() # Update the window displayed
+
+def resetHandler():
+    global RAYS
+    global INTERCEPTS
+    global DRAW_QUEUE
+
+    RAYS = []
+    INTERCEPTS = []
+    DRAW_QUEUE = []
     
                 
 # A soup of all the things that need to be done per tick.
 def computation():
     eventHandler()
     keystrokeHandler()
-    terrainHandler()
     entityHandler()
+    gfxHandler()
     interfaceHandler()
     drawHandler()
+    resetHandler()
 
 '''
     THREAD HANDLER
