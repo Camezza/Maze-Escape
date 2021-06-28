@@ -96,13 +96,13 @@ def keystrokeHandler():
         velocity = vec2(0, 0)
 
         if key[pygame.K_a]:
-            velocity.x -= 1
+            velocity.x -= 0.1
         if key[pygame.K_d]:
-            velocity.x += 1
+            velocity.x += 0.1
         if key[pygame.K_w]:
-            velocity.y -= 1
+            velocity.y -= 0.1
         if key[pygame.K_s]:
-            velocity.y += 1
+            velocity.y += 0.1
 
         # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
         relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
@@ -149,9 +149,8 @@ def gfxHandler():
                 continue
 
             for direction, boundary in square.occupation.boundingbox.boundaries.items():
-                boundary_offset = boundary.offset(square.position)
+                boundary_offset = boundary.offset(square.position.add(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
                 intercept = raycast.intercept(boundary_offset)
-
 
                 if intercept is None:
                     continue
@@ -176,6 +175,7 @@ def gfxHandler():
             continue
 
         DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(closest_intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
+        #DRAW_QUEUE.append(illustration(pygame.draw.rect, ((pygame.rect(vec2())))))
 
     '''
         Draw the minimap.
@@ -189,7 +189,7 @@ def gfxHandler():
                 continue
 
             for direction, boundary in square.occupation.boundingbox.boundaries.items():
-                boundary_offset = boundary.offset(square.position)
+                boundary_offset = boundary.offset(square.position.add(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
                 DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 2))
 
 def interfaceHandler():
