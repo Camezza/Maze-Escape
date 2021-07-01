@@ -7,12 +7,12 @@ from classes.geometry import vec2
 '''
 @dataclass
 class illustration:
-    draw_func: Callable
+    draw_func: str
     draw_parameters: Tuple
     priority: Optional[int] = 0
 
-    def draw(self, surface):
-        self.draw_func(surface, *self.draw_parameters)
+    def draw(self, reference, surface):
+        reference[self.draw_func](surface, *self.draw_parameters)
 
 '''
     A class for managing multiple dynamic interfaces on a single window

@@ -21,7 +21,7 @@ import warnings
 from concurrent.futures import ProcessPoolExecutor
 
 # Local modules
-from classes.world import terrain, polygon
+from classes.world import terrain, polygon, generateMaze
 from classes.geometry import vec2, line, PI
 from classes.entities import boundingbox, entity
 from classes.interface import canvas, illustration, colourDistanceMultiplier
@@ -34,12 +34,18 @@ TICK_FREQUENCY = 60
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
-WORLD_DIMENSIONS = vec2(50, 50) # World coordinate dimensions, affects how objects are oriented on a cartesian map
+WORLD_DIMENSIONS = vec2(256, 256) # World coordinate dimensions, affects how objects are oriented on a cartesian map
 MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y, WINDOW_DIMENSIONS.y))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
 
 # Drawing
+DRAW_REFERENCE = {
+    'rectangle': pygame.draw.rect,
+    'circle': pygame.draw.circle,
+    'line': pygame.draw.line,
+
+}
 DRAW_QUEUE: List[illustration] = []
 MINIMAP_PRIORITY = 1000
 PERSPECTIVE_PRIORITY = 100
@@ -51,7 +57,7 @@ ENTITIES: List[entity] = []
 LOAD_DISTANCE = 6
 
 # 3D View
-RENDER_DISTANCE = 20
+RENDER_DISTANCE = LOAD_DISTANCE
 RENDER_RESOLUTION = 30
 INTERCEPTS = None
 RAYS = None
@@ -71,8 +77,8 @@ def init():
     '''
         Generate the world
     '''
-    for i in range(WORLD_DIMENSIONS.x):
-        WORLD.getSquare(vec2(i, 30)).setOccupation(polygon(boundingbox(0.5)))
+    WORLD.fill()
+    WORLD.grid = generateMaze(WORLD.grid)
 
     '''
         Define intercepts as an array
@@ -120,7 +126,7 @@ def entityHandler():
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
 
     # PROBLEM: PLAYER.position is being mutated, and therefore the drawing position differs from the raycasts.
-    DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius), MINIMAP_PRIORITY + 5))
+    DRAW_QUEUE.append(illustration('circle', ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius), MINIMAP_PRIORITY + 5))
     PLAYER.tick()
     
     # Entity updates
@@ -138,7 +144,7 @@ def gfxHandler():
         raycast = RAYS[raycast_index]
         squares = WORLD.getAdjacentSquares(PLAYER.position.floor(), LOAD_DISTANCE)
         INTERCEPTS.append([])
-        DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
+        DRAW_QUEUE.append(illustration('line', ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
 
         for square in squares:
 
@@ -174,7 +180,7 @@ def gfxHandler():
         if closest_intercept is None:
             continue
 
-        DRAW_QUEUE.append(illustration(pygame.draw.circle, ((255, 0, 0), MINIMAP.relative(closest_intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
+        DRAW_QUEUE.append(illustration('circle', ((255, 0, 0), MINIMAP.relative(closest_intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
         #DRAW_QUEUE.append(illustration(pygame.draw.rect, ((pygame.rect(vec2())))))
 
     '''
@@ -190,10 +196,10 @@ def gfxHandler():
 
             for direction, boundary in square.occupation.boundingbox.boundaries.items():
                 boundary_offset = boundary.offset(square.position.add(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
-                DRAW_QUEUE.append(illustration(pygame.draw.line, ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 2))
+                DRAW_QUEUE.append(illustration('line', ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 2))
 
 def interfaceHandler():
-    DRAW_QUEUE.append(illustration(pygame.draw.rect, ((0, 0, 0), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y)), MINIMAP_PRIORITY + 1))
+    DRAW_QUEUE.append(illustration('rectangle', ((0, 0, 0), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y)), MINIMAP_PRIORITY + 1))
     pass
 
 def drawHandler():
@@ -213,7 +219,7 @@ def drawHandler():
                 highest_priority_index = index
 
         # Draw the highest priority first
-        DRAW_QUEUE[highest_priority_index].draw(WINDOW)
+        DRAW_QUEUE[highest_priority_index].draw(DRAW_REFERENCE, WINDOW)
         DRAW_QUEUE.pop(highest_priority_index)
 
     pygame.display.update() # Update the window displayed
