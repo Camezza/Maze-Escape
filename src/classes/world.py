@@ -53,13 +53,12 @@ def generateMaze(reference):
 
     # still have valid places to move
     while len(cache) > 0:
-        print(cache)
         current_position = cache[len(cache) - 1]
         directional = []
         
         for direction in CARDINAL:
             query = current_position.add(direction[0] * 2, direction[1] * 2) # 2 spaces in each direction
-            difference = dimensions.subtract(query.x, query.y)
+            difference = dimensions.subtract(query.x + 1, query.y + 1)
 
             # determine if space hasn't been taken yet and is inside the grid
             inside = (difference.x > 0 and difference.y > 0) and (difference.x < dimensions.x and difference.y < dimensions.y)

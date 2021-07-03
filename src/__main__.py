@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor
 from classes.world import terrain, polygon, generateMaze
 from classes.geometry import vec2, line, PI
 from classes.entities import boundingbox, entity
-from classes.interface import canvas, illustration, colourDistanceMultiplier
+from classes.interface import canvas, illustration, palette, colourDistanceMultiplier
 
 '''
     GLOBAL DEFINITIONS
@@ -34,7 +34,7 @@ TICK_FREQUENCY = 60
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
-WORLD_DIMENSIONS = vec2(256, 256) # World coordinate dimensions, affects how objects are oriented on a cartesian map
+WORLD_DIMENSIONS = vec2(16, 16).add(1, 1) # World coordinate dimensions, affects how objects are oriented on a cartesian map
 MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y, WINDOW_DIMENSIONS.y))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
@@ -46,7 +46,7 @@ DRAW_REFERENCE = {
     'line': pygame.draw.line,
 
 }
-DRAW_QUEUE: List[illustration] = []
+DRAW_QUEUE = palette()
 MINIMAP_PRIORITY = 1000
 PERSPECTIVE_PRIORITY = 100
 
@@ -54,12 +54,13 @@ PERSPECTIVE_PRIORITY = 100
 WORLD = terrain(WORLD_DIMENSIONS)
 PLAYER = entity(vec2(0, 0), boundingbox(5))
 ENTITIES: List[entity] = []
-LOAD_DISTANCE = 6
+LOAD_DISTANCE = 3
 
 # 3D View
 RENDER_DISTANCE = LOAD_DISTANCE
 RENDER_RESOLUTION = 30
 INTERCEPTS = None
+VISIBLE_INTERCEPTS = None
 RAYS = None
 
 
@@ -84,7 +85,9 @@ def init():
         Define intercepts as an array
     '''
     global INTERCEPTS
+    global VISIBLE_INTERCEPTS
     INTERCEPTS = []
+    VISIBLE_INTERCEPTS = []
 
 '''
     MAIN COMPUTATION METHODS
@@ -102,13 +105,13 @@ def keystrokeHandler():
         velocity = vec2(0, 0)
 
         if key[pygame.K_a]:
-            velocity.x -= 0.1
+            velocity.x -= 0.03
         if key[pygame.K_d]:
-            velocity.x += 0.1
+            velocity.x += 0.03
         if key[pygame.K_w]:
-            velocity.y -= 0.1
+            velocity.y -= 0.03
         if key[pygame.K_s]:
-            velocity.y += 0.1
+            velocity.y += 0.03
 
         # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
         relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
@@ -126,7 +129,7 @@ def entityHandler():
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
 
     # PROBLEM: PLAYER.position is being mutated, and therefore the drawing position differs from the raycasts.
-    DRAW_QUEUE.append(illustration('circle', ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius), MINIMAP_PRIORITY + 5))
+    DRAW_QUEUE.append(illustration('circle', ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius)), MINIMAP_PRIORITY + 5)
     PLAYER.tick()
     
     # Entity updates
@@ -140,11 +143,12 @@ def gfxHandler():
     '''
         Retrieve raycast intercepts
     '''
+    current_time = time.time()
     for raycast_index in range(len(RAYS)):
         raycast = RAYS[raycast_index]
         squares = WORLD.getAdjacentSquares(PLAYER.position.floor(), LOAD_DISTANCE)
         INTERCEPTS.append([])
-        DRAW_QUEUE.append(illustration('line', ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 3))
+        DRAW_QUEUE.append(illustration('line', ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1)), MINIMAP_PRIORITY + 3)
 
         for square in squares:
 
@@ -162,6 +166,9 @@ def gfxHandler():
                     continue
 
                 INTERCEPTS[raycast_index].append(intercept)
+
+    print(f'Took intercepts {round(time.time() - current_time, 2) * 1000}ms to process')
+    current_time = time.time()
     '''
         Draw graphics based on intercepts closest to player
     '''
@@ -180,9 +187,12 @@ def gfxHandler():
         if closest_intercept is None:
             continue
 
-        DRAW_QUEUE.append(illustration('circle', ((255, 0, 0), MINIMAP.relative(closest_intercept, WORLD_DIMENSIONS).display(), 5, 5), MINIMAP_PRIORITY + 4))
+        VISIBLE_INTERCEPTS.append(closest_intercept)
+        DRAW_QUEUE.append(illustration('circle', ((255, 0, 0), MINIMAP.relative(closest_intercept, WORLD_DIMENSIONS).display(), 5, 5)), MINIMAP_PRIORITY + 4)
         #DRAW_QUEUE.append(illustration(pygame.draw.rect, ((pygame.rect(vec2())))))
 
+    print(f'Took player-closest intercepts {round(time.time() - current_time, 2) * 1000}ms to process')
+    current_time = time.time()
     '''
         Draw the minimap.
     '''
@@ -196,42 +206,49 @@ def gfxHandler():
 
             for direction, boundary in square.occupation.boundingbox.boundaries.items():
                 boundary_offset = boundary.offset(square.position.add(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
-                DRAW_QUEUE.append(illustration('line', ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1), MINIMAP_PRIORITY + 2))
+                DRAW_QUEUE.append(illustration('line', ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1)), MINIMAP_PRIORITY + 2)
+
+    print(f'Took minimap {round(time.time() - current_time, 2) * 1000}ms to process')
+    current_time = time.time()
+    print('\n')
+
+    '''
+        Draw the 3D View.
+    '''
+    for i in range(len(VISIBLE_INTERCEPTS)):
+        
 
 def interfaceHandler():
-    DRAW_QUEUE.append(illustration('rectangle', ((0, 0, 0), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y)), MINIMAP_PRIORITY + 1))
+    WINDOW.fill((0, 0, 0)) # Clear the current screen
+    DRAW_QUEUE.append(illustration('rectangle', ((0, 0, 0), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y))), MINIMAP_PRIORITY + 1)
     pass
 
 def drawHandler():
-    WINDOW.fill((0, 0, 0)) # Clear the current screen
-
     global DRAW_QUEUE
-    while len(DRAW_QUEUE) > 0:
+
+    while len(DRAW_QUEUE.queue.items()) > 0:
         highest_priority = -1 # the lowest number has the highest priority
-        highest_priority_index = -1
+        for priority, runnable in DRAW_QUEUE.queue.items():
+            if highest_priority < 0 or priority < highest_priority:
+                highest_priority = priority
 
-        for index in range(len(DRAW_QUEUE)):
-            runnable = DRAW_QUEUE[index]
+        for runnable in DRAW_QUEUE.queue[highest_priority]:
+            runnable.draw(DRAW_REFERENCE, WINDOW)
 
-            # Higher priority drawable found
-            if highest_priority < 0 or runnable.priority < highest_priority:
-                highest_priority = runnable.priority
-                highest_priority_index = index
-
-        # Draw the highest priority first
-        DRAW_QUEUE[highest_priority_index].draw(DRAW_REFERENCE, WINDOW)
-        DRAW_QUEUE.pop(highest_priority_index)
+        DRAW_QUEUE.queue.pop(highest_priority, None)
 
     pygame.display.update() # Update the window displayed
 
 def resetHandler():
     global RAYS
     global INTERCEPTS
+    global VISIBLE_INTERCEPTS
     global DRAW_QUEUE
 
     RAYS = []
     INTERCEPTS = []
-    DRAW_QUEUE = []
+    VISIBLE_INTERCEPTS = []
+    DRAW_QUEUE.reset()
     
                 
 # A soup of all the things that need to be done per tick.

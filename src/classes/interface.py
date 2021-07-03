@@ -1,5 +1,5 @@
-from typing import Callable, Tuple, Optional
-from dataclasses import dataclass
+from typing import Callable, Dict, List, Tuple, Optional
+from dataclasses import dataclass, field
 from classes.geometry import vec2
 
 '''
@@ -9,10 +9,26 @@ from classes.geometry import vec2
 class illustration:
     draw_func: str
     draw_parameters: Tuple
-    priority: Optional[int] = 0
 
     def draw(self, reference, surface):
         reference[self.draw_func](surface, *self.draw_parameters)
+
+@dataclass
+class palette:
+    queue: Dict[illustration, int] = None
+
+    def __post_init__(self):
+        self.queue = {}
+
+    def append(self, drawing: illustration, priority: int):
+        try:
+            self.queue[priority].append(drawing)
+        except KeyError:
+            self.queue[priority]: List[illustration] = []
+            self.queue[priority].append(drawing)
+
+    def reset(self):
+        self.queue = {}
 
 '''
     A class for managing multiple dynamic interfaces on a single window
