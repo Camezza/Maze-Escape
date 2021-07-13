@@ -45,7 +45,7 @@ class vec2:
         return vec2(self.x / x, self.y / y)
 
     def floor(self):
-        return vec2(int(self.x), int(self.y))
+        return vec2(math.floor(self.x), math.floor(self.y))
 
     def length(self):
         return ((self.x ** 2) + (self.y ** 2)) ** (1/2)
@@ -57,6 +57,19 @@ class vec2:
     def relative(self, angle: angle):
         radius = self.length()
         return vec2(math.sin(angle.radians) * radius, math.cos(angle.radians) * radius)
+
+    def direction(self):
+        first_component = int(math.copysign(1, self.y) + 1)
+        second_component = int(math.copysign(1, self.x) + 1)
+
+        if self.x == 0:
+            return FIRST_COMPONENT_REFERENCE[first_component]
+        elif self.y == 0:
+            return SECOND_COMPONENT_REFERENCE[second_component]
+        elif self.x == 0 and self.y == 0:
+            return None
+        else:
+            return FIRST_COMPONENT_REFERENCE[first_component] + '-' + SECOND_COMPONENT_REFERENCE[second_component]
 
     def display(self):
         return (self.x, self.y)
@@ -152,15 +165,7 @@ class line:
         return None
 
     def direction(self):
-        difference = self.finish.subtract(self.start.x, self.start.y)
-        first_component = int(math.copysign(1, difference.y) + 1)
-        second_component = int(math.copysign(1, difference.x) + 1)
-
-        if difference.x == 0:
-            return FIRST_COMPONENT_REFERENCE[first_component]
-        elif difference.y == 0:
-            return SECOND_COMPONENT_REFERENCE[second_component]
-        elif difference.x == 0 and difference.y == 0:
+        direction = self.finish.subtract(self.start.x, self.start.y).direction()
+        if direction is None:
             raise RuntimeError('Line doesn\'t have a direction! Are the line\'s start and finish vectors the same value?')
-        else:
-            return FIRST_COMPONENT_REFERENCE[first_component] + '-' + SECOND_COMPONENT_REFERENCE[second_component]
+        return direction

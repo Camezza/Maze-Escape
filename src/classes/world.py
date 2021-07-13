@@ -169,15 +169,15 @@ class terrain:
             for y in range(self.dimensions.y):
                 self.getSquare(vec2(x, y)).setOccupation(polygon(boundingbox(0.5)))
 
-
     '''
         Retrieves a square from a defined terrain. Returns None if coordinate doesn't exist
     '''
     def getSquare(self, position: vec2) -> square:
         try:
+            assert position.x >= 0 and position.y >= 0
             return self.grid[position.x][position.y]
-        except AttributeError:
-            raise RuntimeError('Could not retrieve square that is not in coordinate scope')
+        except (IndexError, AssertionError):
+            return None
 
     def getAdjacentSquares(self, position: vec2, radius: int) -> List[square]:
         coordinates = []

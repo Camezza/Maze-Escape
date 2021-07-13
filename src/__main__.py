@@ -51,8 +51,8 @@ PERSPECTIVE_PRIORITY = 100
 
 # World
 WORLD = terrain(WORLD_DIMENSIONS)
-PLAYER = entity(vec2(0, 0), boundingbox(5))
-ENTITIES: List[entity] = []
+PLAYER = entity(vec2(10, 10), boundingbox(5))
+ENTITIES: List[entity] = [PLAYER]
 LOAD_DISTANCE = 3
 
 # 3D View
@@ -66,7 +66,6 @@ RAYS = None
 '''
     INITIALISATION
 '''
-
 def init():
     '''
         Determine the first set of raycasts
@@ -129,10 +128,20 @@ def entityHandler():
 
     # PROBLEM: PLAYER.position is being mutated, and therefore the drawing position differs from the raycasts.
     DRAW_QUEUE.append(illustration('circle', ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius)), MINIMAP_PRIORITY + 5)
-    PLAYER.tick()
     
     # Entity updates
     for entity in ENTITIES:
+        next_square =  WORLD.getSquare(entity.position.add(entity.velocity.x, entity.velocity.y).floor())
+        direction = entity.velocity.direction()
+
+        if next_square is None or not next_square.occupation is None:
+            query_boundaries = []
+            for direction in direction.split('-'):
+                query_boundaries.append(next_square.occupation.boundingbox.boundaries[direction])
+
+            print(len(query_boundaries))
+            entity.velocity = vec2(0, 0)
+
         entity.tick()
 
 def gfxHandler():
@@ -220,8 +229,10 @@ def gfxHandler():
         if data['intercept'] is None:
             continue
 
-        maximum_distance = math.sqrt(2 * RENDER_DISTANCE ** 2)
         distance = PLAYER.position.distance(data['intercept'])
+        # hacky way of ensuring that the program doesn't divide by zero
+        if distance == 0:
+            distance = 0.01
         dimensions = PERSPECTIVE.relative(vec2(1 - 0.2, 1/distance), vec2(RENDER_RESOLUTION, RENDER_DISTANCE))
         position = PERSPECTIVE.relative(vec2(offset + 0.5, (RENDER_DISTANCE/2) - (1/(distance*2))), vec2(RENDER_RESOLUTION, RENDER_DISTANCE))
         wall = pygame.Rect(position.display(), dimensions.display())
@@ -229,7 +240,6 @@ def gfxHandler():
         distance_multiplier = abs(1 - (distance/RENDER_DISTANCE))
 
         DRAW_QUEUE.append(illustration('rectangle', ((255 * distance_multiplier, 255 * distance_multiplier, 255 * distance_multiplier), wall)), PERSPECTIVE_PRIORITY)
-        #DRAW_QUEUE.append(illustration('circle', ((0, 0, 255), position.display(), 5, 5)), 99999)
 
 def interfaceHandler():
     WINDOW.fill((0, 0, 0)) # Clear the current screen
