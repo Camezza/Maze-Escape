@@ -42,11 +42,17 @@ def adjacentDirectional(position: vec2, radius: int) -> List[vec2]:
 def generateMaze(reference):
     assert len(reference) > 3, f'grid x axis needs to be larger than 3, got {len(reference)}'
     assert len(reference[0]) > 3, f'grid y axis needs to be larger than 3, got {len(reference[0])}' # We can do this as coordinates are regular
+    assert len(reference) % 2 != 0 and len(reference[0]) % 2 != 0, 'Grid needs to be an odd value.'
 
     grid = [[y for y in x] for x in reference]
     dimensions = vec2(len(grid), len(grid[0]))
+
     start = vec2(1, 1) # offset from wall
-    finish = vec2(dimensions.x - 2, dimensions.y - 2) # coordinates start at 0, offset from wall
+    finish = vec2(dimensions.x - 1, dimensions.y - 1) # coordinates start at 0, offset from wall
+
+    # Clear a hole for the start and finish of the maze
+    grid[start.x-1][start.y].occupation = None
+    grid[finish.x][finish.y-1].occupation = None
 
     current_position = None
     cache = [start]

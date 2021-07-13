@@ -51,7 +51,7 @@ PERSPECTIVE_PRIORITY = 100
 
 # World
 WORLD = terrain(WORLD_DIMENSIONS)
-PLAYER = entity(vec2(10, 10), boundingbox(5))
+PLAYER = entity(vec2(0.5, 1.5), boundingbox(5))
 ENTITIES: List[entity] = [PLAYER]
 LOAD_DISTANCE = 3
 
@@ -134,7 +134,7 @@ def entityHandler():
         next_square =  WORLD.getSquare(entity.position.add(entity.velocity.x, entity.velocity.y).floor())
         direction = entity.velocity.direction()
 
-        if next_square is None or not next_square.occupation is None:
+        if not next_square is None and not next_square.occupation is None:
             query_boundaries = []
             for direction in direction.split('-'):
                 query_boundaries.append(next_square.occupation.boundingbox.boundaries[direction])
@@ -161,9 +161,6 @@ def gfxHandler():
         DRAW_QUEUE.append(illustration('line', ((255, 255, 128), MINIMAP.relative(raycast.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(raycast.finish, WORLD_DIMENSIONS).display(), 1)), MINIMAP_PRIORITY + 3)
 
         for square in squares:
-
-            #rect = pygame.Rect(MINIMAP.relative(square.position.add(0.5, 0.5), WORLD_DIMENSIONS).display(), (MINIMAP.ratio(WORLD_DIMENSIONS).x, MINIMAP.ratio(WORLD_DIMENSIONS).y))
-            #DRAW_QUEUE.append(illustration(pygame.draw.rect, ((255, 0, 255), rect), MINIMAP_PRIORITY + 10))
 
             if square is None or square.occupation is None:
                 continue
@@ -202,7 +199,7 @@ def gfxHandler():
 
         VISIBLE_INTERCEPTS[data_index]['parent'] = data['parent'][closest_intercept_index]
         VISIBLE_INTERCEPTS[data_index]['intercept'] = data['intercept'][closest_intercept_index]
-        DRAW_QUEUE.append(illustration('circle', ((255, 0, 0), MINIMAP.relative(data['intercept'][closest_intercept_index], WORLD_DIMENSIONS).display(), 5, 5)), MINIMAP_PRIORITY + 4)
+        #DRAW_QUEUE.append(illustration('circle', ((255, 0, 0), MINIMAP.relative(data['intercept'][closest_intercept_index], WORLD_DIMENSIONS).display(), 5, 5)), MINIMAP_PRIORITY + 4)
         #DRAW_QUEUE.append(illustration(pygame.draw.rect, ((pygame.rect(vec2())))))
 
     '''
