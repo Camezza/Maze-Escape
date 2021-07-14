@@ -14,11 +14,8 @@ from typing import List
 from pygame.locals import *
 
 # Modules for threading
-import multiprocessing
-import asyncio
 import time
 import warnings
-from concurrent.futures import ProcessPoolExecutor
 
 # Local modules
 from classes.world import terrain, polygon, generateMaze
@@ -31,6 +28,8 @@ from classes.interface import canvas, illustration, palette, colourDistanceMulti
 '''
 # Threading
 TICK_FREQUENCY = 60
+TICK_RATE = 1
+TICK_RATIO = 1
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
@@ -62,6 +61,17 @@ INTERCEPTS = None
 VISIBLE_INTERCEPTS = None
 RAYS = None
 
+'''
+    GLOBAL FUNCTIONS
+'''
+
+# Calculate a multiplier to match a full speed tickrate
+def tickRatio():
+    ratio = TICK_RATE
+    if TICK_RATE > 60:
+        ratio = 60
+
+    return TICK_FREQUENCY / ratio
 
 '''
     INITIALISATION
@@ -103,22 +113,24 @@ def keystrokeHandler():
         velocity = vec2(0, 0)
 
         if key[pygame.K_a]:
-            velocity.x -= 0.03
+            velocity.x -= 0.01
         if key[pygame.K_d]:
-            velocity.x += 0.03
+            velocity.x += 0.01
         if key[pygame.K_w]:
-            velocity.y -= 0.03
+            velocity.y -= 0.01
         if key[pygame.K_s]:
-            velocity.y += 0.03
+            velocity.y += 0.01
+        if key[pygame.K_LSHIFT]:
+            velocity = velocity.multiply(2, 2)
 
         # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
-        relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)) 
+        relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)).multiply(TICK_RATIO, TICK_RATIO)
         PLAYER.velocity = PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
 
     if key[pygame.K_LEFT]:
-        PLAYER.yaw = PLAYER.yaw.add((PI/180) * 10)
+        PLAYER.yaw = PLAYER.yaw.add((PI/180) * 3 * TICK_RATIO)
     if key[pygame.K_RIGHT]:
-        PLAYER.yaw = PLAYER.yaw.subtract((PI/180) * 10)
+        PLAYER.yaw = PLAYER.yaw.subtract((PI/180) * 3 * TICK_RATIO)
 
 def entityHandler():
     global RAYS
@@ -273,6 +285,8 @@ def resetHandler():
                 
 # A soup of all the things that need to be done per tick.
 def computation():
+    global TICK_RATIO
+    TICK_RATIO = tickRatio()
     eventHandler()
     keystrokeHandler()
     entityHandler()
@@ -286,6 +300,8 @@ def computation():
 '''
 
 def tick():
+    global TICK_RATE
+
     # Record initial time before code execution
     time_initial = time.time()
 
@@ -294,11 +310,15 @@ def tick():
 
     # Record time after code execution and compare difference to ticks.
     time_post = time.time()
-    time_difference = time_post - time_initial
-    if time_difference < (1/TICK_FREQUENCY):
-        time.sleep((1/TICK_FREQUENCY) - time_difference) # pause execution until the tick is done
+    time_ratio = (1/TICK_FREQUENCY) # expected tick time
+    time_difference = time_post - time_initial # actual tick time
+
+    if time_difference < time_ratio:
+        time.sleep(time_ratio - time_difference) # pause execution until the tick is done
     else:
         warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning, stacklevel=4)
+
+    TICK_RATE = (time_ratio/time_difference) * TICK_FREQUENCY
     
 def threadHandler():
     while True:
