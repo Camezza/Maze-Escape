@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Callable, Tuple
 from classes.geometry import vec2, line
 import math
 import random
@@ -11,6 +11,13 @@ import random
 FRICTION = 1.5
 CARDINAL = [[1, 0],[0, 1],[-1, 0],[0, -1]]
 DIAGONAL = [[1, 1],[-1, 1],[-1, -1],[1, -1]]
+REVERSE = {
+    'NORTH': 'SOUTH',
+    'EAST': 'WEST',
+    'SOUTH': 'NORTH',
+    'WEST': 'EAST',
+}
+
 '''
     Get adjacent coordinates
 '''
@@ -39,7 +46,10 @@ def adjacentDirectional(position: vec2, radius: int) -> List[vec2]:
 '''
     Maze generation
 '''
-def generateMaze(reference):
+# Items:
+# - Time extension
+# 
+def generateMaze(reference, item_frequency):
     assert len(reference) > 3, f'grid x axis needs to be larger than 3, got {len(reference)}'
     assert len(reference[0]) > 3, f'grid y axis needs to be larger than 3, got {len(reference[0])}' # We can do this as coordinates are regular
     assert len(reference) % 2 != 0 and len(reference[0]) % 2 != 0, 'Grid needs to be an odd value.'
@@ -51,8 +61,8 @@ def generateMaze(reference):
     finish = vec2(dimensions.x - 1, dimensions.y - 1) # coordinates start at 0, offset from wall
 
     # Clear a hole for the start and finish of the maze
-    grid[start.x-1][start.y].occupation = None
-    grid[finish.x][finish.y-1].occupation = None
+    #grid[start.x-1][start.y].occupation = None
+    grid[finish.x][finish.y-1].occupation = polygon('finish', boundingbox(0.1), (255, 255, 0))
 
     current_position = None
     cache = [start]
@@ -69,7 +79,7 @@ def generateMaze(reference):
             # determine if space hasn't been taken yet and is inside the grid
             inside = (difference.x > 0 and difference.y > 0) and (difference.x < dimensions.x and difference.y < dimensions.y)
 
-            if inside and not grid[query.x][query.y].occupation is None:
+            if inside and not grid[query.x][query.y].occupation is None and grid[query.x][query.y].occupation.type == 'wall':
                 directional.append(query)
 
         valid = None
@@ -85,11 +95,15 @@ def generateMaze(reference):
                 for y in range(0, difference.y, int(math.copysign(1, difference.y))):
                     query = current_position.add(0, y).floor()
                     grid[query.x][query.y].occupation = None
+                    if random.randint(item_frequency, 100) == item_frequency:
+                        grid[query.x][query.y].occupation = polygon('time', boundingbox(0.1), (0, 100, 100))
 
             elif difference.y == 0:
                 for x in range(0, difference.x, int(math.copysign(1, difference.x))):
                     query = current_position.add(x, 0).floor()
                     grid[query.x][query.y].occupation = None
+                    if random.randint(item_frequency, 100) == item_frequency:
+                        grid[query.x][query.y].occupation = polygon('time', boundingbox(0.1), (0, 100, 100))
 
             else:
                 raise RuntimeError('Offset either non cardinal or same as starting position.')
@@ -118,28 +132,14 @@ class boundingbox:
             'SOUTH': line(vec2(-self.radius, self.radius), vec2(-self.radius, -self.radius)),
             'EAST': line(vec2(-self.radius, -self.radius), vec2(self.radius, -self.radius)),
             'WEST': line(vec2(self.radius, -self.radius), vec2(self.radius, self.radius)),
-        }
+        }            
 
-    def directional(self, line: vec2) -> List[line]:
-        boundaries = []
-        direction = line.direction()
-        for iterator in direction.split('-'):
-            boundaries.append(self.boundaries[iterator])
-        return boundaries
-            
-            
 
 @dataclass
-class object:
+class polygon:
+    type: str
     boundingbox: boundingbox
-
-@dataclass
-class polygon(object):
-    display: Optional[List[line]] = None # generate a boundingbox relative shape by default
-
-    def __post_init__(self):
-        if self.display is None:
-            self.display = self.boundingbox.boundaries
+    colour: Tuple[int, int, int]
 
 '''
     Coordinate occupation
@@ -173,7 +173,7 @@ class terrain:
     def fill(self):
         for x in range(self.dimensions.x):
             for y in range(self.dimensions.y):
-                self.getSquare(vec2(x, y)).setOccupation(polygon(boundingbox(0.5)))
+                self.getSquare(vec2(x, y)).setOccupation(polygon('wall', boundingbox(0.5), (255, 255, 255)))
 
     '''
         Retrieves a square from a defined terrain. Returns None if coordinate doesn't exist

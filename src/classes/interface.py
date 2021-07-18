@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Optional
+from typing import Dict, Tuple
 from dataclasses import dataclass, field
 from classes.geometry import vec2
 
@@ -24,7 +24,7 @@ class palette:
         try:
             self.queue[priority].append(drawing)
         except KeyError:
-            self.queue[priority]: List[illustration] = []
+            self.queue[priority] = []
             self.queue[priority].append(drawing)
 
     def reset(self):
