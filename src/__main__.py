@@ -35,7 +35,7 @@ TICK_RATIO = 1
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
-WORLD_DIMENSIONS = vec2(16, 16).add(1, 1) # World coordinate dimensions, affects how objects are oriented on a cartesian map
+WORLD_DIMENSIONS = vec2(8, 8).add(1, 1) # World coordinate dimensions, affects how objects are oriented on a cartesian map
 MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y/4, WINDOW_DIMENSIONS.y/4))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
 HUD = canvas(WINDOW_DIMENSIONS.divide(2, WINDOW_DIMENSIONS.y).subtract(WINDOW_DIMENSIONS.x/2, 0), WINDOW_DIMENSIONS.divide(1, WINDOW_DIMENSIONS.y * 30 ** -1), WINDOW_DIMENSIONS.divide(1, WINDOW_DIMENSIONS.y * 30 ** -1))
@@ -85,7 +85,9 @@ def tickRatio():
     return TICK_FREQUENCY / ratio
 
 def nextLevel():
-    global WORLD, COUNTDOWN, LEVEL
+    global WORLD, WORLD_DIMENSIONS, COUNTDOWN, LEVEL
+
+    WORLD_DIMENSIONS = WORLD_DIMENSIONS.add(2, 2)
 
     # Reset the world
     WORLD = terrain(WORLD_DIMENSIONS)
