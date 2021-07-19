@@ -4,7 +4,7 @@
  <img src="screenshot.png">
 </div>
 
-## Requirements
+## Requirements & Installation
 - This project uses [Python 3](https://www.python.org/download/releases/3.0/), and the [pygame](https://www.pygame.org/wiki/about) library for rendering.
 - Installation can be simplified with [homebrew](https://brew.sh/):
 ```bash
@@ -14,7 +14,7 @@ pip install pygame
 - After that, you can clone the project and navigate to its source directory:
 ```bash
 git clone https://github.com/Camezza/Maze-Escape.git
-cd src
+cd Maze-Escape/src
 ```
 
 ## Usage
@@ -22,6 +22,7 @@ cd src
 ```bash
 python3 __main__.py
 ```
+
 ## Controls
 - Use WASD keys to strafe in cardinal directions.
 - Hold SHIFT to sprint.
