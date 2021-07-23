@@ -1,5 +1,6 @@
 import math
 from dataclasses import dataclass
+from profilehooks import profile
 
 '''
     GLOBAL CONSTANTS    
@@ -33,26 +34,30 @@ class vec2:
     y: float
 
     def add(self, x: float, y: float):
-        return vec2(self.x + x, self.y + y)
+        self.x += x
+        self.y += y
 
     def subtract(self, x: float, y: float):
-        return vec2(self.x - x, self.y - y)
+        self.x -= x
+        self.y -= y
 
     def multiply(self, x: float, y: float):
-        return vec2(self.x * x, self.y * y)
+        self.x *= x
+        self.y *= y
 
     def divide(self, x: float, y: float):
-        return vec2(self.x / x, self.y / y)
+        self.x /= x
+        self.y /= y
 
     def floor(self):
-        return vec2(math.floor(self.x), math.floor(self.y))
+        self.x = math.floor(self.x)
+        self.y = math.floor(self.y)
 
     def length(self):
         return ((self.x ** 2) + (self.y ** 2)) ** (1/2)
 
     def distance(self, position):
-        difference = position.subtract(self.x, self.y)
-        return ((difference.x ** 2) + (difference.y ** 2)) ** (1/2)
+        return (((position.x - self.x) ** 2) + ((position.y - self.y) ** 2)) ** (1/2)
 
     def relative(self, angle: angle):
         radius = self.length()
@@ -83,8 +88,8 @@ class line:
     finish: vec2
 
     def offset(self, position: vec2):
-        start = self.start.add(position.x, position.y)
-        finish = self.finish.add(position.x, position.y)
+        start = vec2(self.start.x + position.x, self.start.y + position.y)
+        finish = vec2(self.finish.x + position.x, self.finish.y + position.y)
         return line(start, finish)
 
     def scale(self, reference_dimensions: vec2, absolute_dimensions: vec2):
@@ -96,8 +101,8 @@ class line:
         '''
             Simple line equation to find where rays intercept. y = mx + b = m(x-c)/a
         '''
-        line1_difference = self.finish.subtract(self.start.x, self.start.y)
-        line2_difference = line.finish.subtract(line.start.x, line.start.y)
+        line1_difference = vec2(self.finish.x - self.start.x, self.finish.y - self.start.y)
+        line2_difference = vec2(line.finish.x - line.start.x, line.finish.y - line.start.y)
         x = y = None # initialise
 
         '''
@@ -140,32 +145,19 @@ class line:
                 y = (m * x) + b
 
         # Retreive the domains and ranges
-        ray1_x_min = min(self.start.x, self.finish.x)
-        ray1_x_max = max(self.start.x, self.finish.x)
-
-        ray1_y_min = min(self.start.y, self.finish.y)
-        ray1_y_max = max(self.start.y, self.finish.y)
-
-        ray2_x_min = min(line.start.x, line.finish.x)
-        ray2_x_max = max(line.start.x, line.finish.x)
-
-        ray2_y_min = min(line.start.y, line.finish.y)
-        ray2_y_max = max(line.start.y, line.finish.y)
-
-        # Determine if line intercepts between each ray's domain and range
-        ray1Domain: bool = (ray1_x_min <= x and x <= ray1_x_max)
-        ray2Domain: bool = (ray2_x_min <= x and x <= ray2_x_max)
-        ray1Range: bool = (ray1_y_min <= y and y <= ray1_y_max)
-        ray2Range: bool = (ray2_y_min <= y and y <= ray2_y_max)
+        ray1_domain = (x <= self.start.x and x >= self.finish.x) or (x >= self.start.x and x <= self.finish.x)
+        ray1_range = (y <= self.start.y and y >= self.finish.y) or (y >= self.start.y and y <= self.finish.y)
+        ray2_domain = (x <= line.start.x and x >= line.finish.x) or (x >= line.start.x and x <= line.finish.x)
+        ray2_range = (y<= line.start.y and y >= line.finish.y) or (y >= line.start.y and y <= line.finish.y)
 
         # restrict to ray domain and range
-        if ray1Domain and ray2Domain and ray1Range and ray2Range:
+        if ray1_domain and ray2_domain and ray1_range and ray2_range:
             return vec2(x, y)
 
         return None
 
     def direction(self):
-        direction = self.finish.subtract(self.start.x, self.start.y).direction()
+        direction = vec2(self.finish.x - self.start.x, self.finish.y - self.start.y).direction()
         if direction is None:
             raise RuntimeError('Line doesn\'t have a direction! Are the line\'s start and finish vectors the same value?')
         return direction

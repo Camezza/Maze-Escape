@@ -24,19 +24,19 @@ REVERSE = {
 def adjacentCorner(position: vec2, radius_x: int, radius_y: int) -> List[vec2]:
     coordinates = []
     for x in range(1, abs(radius_x)):
-        coordinates.append(position.add(math.copysign(x, radius_x), radius_y))
+        coordinates.append(vec2(position.x + math.copysign(x, radius_x), position.y + radius_y))
 
         if x == abs(radius_x) - 1:
             for y in range(1, abs(radius_y)):
-                coordinates.append(position.add(radius_x, math.copysign(y, radius_y)))
+                coordinates.append(vec2(position.x + radius_x, position.y + math.copysign(y, radius_y)))
     return coordinates
 
 def adjacentDirectional(position: vec2, radius: int) -> List[vec2]:
     coordinates = []
 
     for i in range(4):
-        cardinal_coordinate = position.add(CARDINAL[i][0] * radius, CARDINAL[i][1] * radius)
-        diagonal_coordinate = position.add(DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
+        cardinal_coordinate = vec2(position.x + (CARDINAL[i][0] * radius), position.y + (CARDINAL[i][1] * radius))
+        diagonal_coordinate = vec2(position.x + (DIAGONAL[i][0] * radius), position.y + (DIAGONAL[i][1] * radius))
         miscellaneous_coordinates = adjacentCorner(position, DIAGONAL[i][0] * radius, DIAGONAL[i][1] * radius)
         miscellaneous_coordinates.extend([cardinal_coordinate, diagonal_coordinate])
         coordinates.extend(miscellaneous_coordinates)
@@ -73,8 +73,8 @@ def generateMaze(reference, item_frequency):
         directional = []
         
         for direction in CARDINAL:
-            query = current_position.add(direction[0] * 2, direction[1] * 2) # 2 spaces in each direction
-            difference = dimensions.subtract(query.x + 1, query.y + 1)
+            query = vec2(current_position.x + (direction[0] * 2), current_position.y + (direction[1] * 2)) # 2 spaces in each direction
+            difference = vec2(dimensions.x - (query.x + 1), dimensions.y - (query.y + 1))
 
             # determine if space hasn't been taken yet and is inside the grid
             inside = (difference.x > 0 and difference.y > 0) and (difference.x < dimensions.x and difference.y < dimensions.y)
@@ -90,19 +90,22 @@ def generateMaze(reference, item_frequency):
         if not valid is None:
 
             # Remove every square from current position to new position
-            difference = valid.subtract(current_position.x, current_position.y).floor()
+            difference = vec2(valid.x - current_position.x, valid.y - current_position.y)
+            difference.floor()
             if difference.x == 0:
                 for y in range(0, difference.y, int(math.copysign(1, difference.y))):
-                    query = current_position.add(0, y).floor()
+                    query = vec2(current_position.x, current_position.y + y)
+                    query.floor()
                     grid[query.x][query.y].occupation = None
-                    if random.randint(item_frequency, 100) == item_frequency:
+                    if random.randint(1, 100) <= item_frequency:
                         grid[query.x][query.y].occupation = polygon('time', boundingbox(0.1), (0, 100, 100))
 
             elif difference.y == 0:
                 for x in range(0, difference.x, int(math.copysign(1, difference.x))):
-                    query = current_position.add(x, 0).floor()
+                    query = vec2(current_position.x + x, current_position.y)
+                    query.floor()
                     grid[query.x][query.y].occupation = None
-                    if random.randint(item_frequency, 100) == item_frequency:
+                    if random.randint(1, 100) <= item_frequency:
                         grid[query.x][query.y].occupation = polygon('time', boundingbox(0.1), (0, 100, 100))
 
             else:
@@ -193,7 +196,7 @@ class terrain:
         squares = []
         for offset in coordinates:
             try: # simply push if no error
-                square = self.getSquare(offset.floor())
+                square = self.getSquare(vec2(math.floor(offset.x), math.floor(offset.y)))
                 squares.append(square)
             except:
                 pass

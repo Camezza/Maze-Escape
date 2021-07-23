@@ -22,7 +22,7 @@ class entity:
         minimum = self.yaw.subtract(self.fov.radians/2)
         for i in range(render_amount):
             radians = minimum.add(i * iterator).radians
-            raycast = line(self.position, self.position.add(math.sin(radians) * render_distance, math.cos(radians) * render_distance))
+            raycast = line(self.position, vec2(self.position.x + (math.sin(radians) * render_distance), self.position.y + (math.cos(radians) * render_distance)))
             rays.append(raycast)
 
         return rays
@@ -31,5 +31,5 @@ class entity:
         Update
     '''
     def tick(self):
-        self.position = self.position.add(self.velocity.x, self.velocity.y) # Update velocity
-        self.velocity = self.velocity.divide(FRICTION, FRICTION) # Apply friction constant to current velocity
+        self.position.add(self.velocity.x, self.velocity.y) # Update velocity
+        self.velocity.divide(FRICTION, FRICTION) # Apply friction constant to current velocity

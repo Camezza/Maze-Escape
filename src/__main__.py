@@ -12,6 +12,7 @@ import pygame
 import math
 from typing import List
 from pygame.locals import *
+from profilehooks import profile
 
 # Modules for threading
 import time
@@ -35,10 +36,10 @@ TICK_RATIO = 1
 
 # Display
 WINDOW_DIMENSIONS = vec2(1280, 720) # Dimensions of the displayed window. Defaults to 1080p, should change dynamically
-WORLD_DIMENSIONS = vec2(8, 8).add(1, 1) # World coordinate dimensions, affects how objects are oriented on a cartesian map
+WORLD_DIMENSIONS = vec2(8 + 1, 8 + 1) # World coordinate dimensions, affects how objects are oriented on a cartesian map
 MINIMAP = canvas(vec2(0, 0), WORLD_DIMENSIONS, vec2(WINDOW_DIMENSIONS.y/4, WINDOW_DIMENSIONS.y/4))
 PERSPECTIVE = canvas(vec2(0, 0), WINDOW_DIMENSIONS, WINDOW_DIMENSIONS)
-HUD = canvas(WINDOW_DIMENSIONS.divide(2, WINDOW_DIMENSIONS.y).subtract(WINDOW_DIMENSIONS.x/2, 0), WINDOW_DIMENSIONS.divide(1, WINDOW_DIMENSIONS.y * 30 ** -1), WINDOW_DIMENSIONS.divide(1, WINDOW_DIMENSIONS.y * 30 ** -1))
+HUD = canvas(vec2(0, 0), vec2(WINDOW_DIMENSIONS.x, WINDOW_DIMENSIONS.y * (1/30)), vec2(WINDOW_DIMENSIONS.x, WINDOW_DIMENSIONS.y * (1/30)))
 WINDOW = pygame.display.set_mode(WINDOW_DIMENSIONS.display()) # Initialise window
 
 # Drawing
@@ -57,6 +58,7 @@ PLAYER = entity(vec2(1.5, 1.5), boundingbox(0.1))
 LOAD_DISTANCE = 3
 
 # Statistics
+MAXIMUM_LEVEL = 10
 LEVEL = 1
 MAXIMUM_COUNTDOWN = 30
 COUNTDOWN = MAXIMUM_COUNTDOWN
@@ -85,15 +87,15 @@ def tickRatio():
     return TICK_FREQUENCY / ratio
 
 def nextLevel():
-    global WORLD, WORLD_DIMENSIONS, COUNTDOWN, LEVEL
+    global ACTIVE, WORLD, WORLD_DIMENSIONS, COUNTDOWN, LEVEL
 
-    WORLD_DIMENSIONS = WORLD_DIMENSIONS.add(2, 2)
+    WORLD_DIMENSIONS.add(2, 2)
 
     # Reset the world
     WORLD = terrain(WORLD_DIMENSIONS)
     WORLD.fill()
-    WORLD.grid = generateMaze(WORLD.grid, 100)
-    WORLD.getSquare(WORLD.dimensions.subtract(1, 2)).setOccupation(polygon('finish', boundingbox(0.1), (0, 255, 0)))
+    WORLD.grid = generateMaze(WORLD.grid, 100 * (1 - (LEVEL/MAXIMUM_LEVEL)) * (1/10))
+    WORLD.getSquare(vec2(WORLD.dimensions.x - 1, WORLD.dimensions.y - 2)).setOccupation(polygon('finish', boundingbox(0.1), (0, 255, 0)))
 
     # Reset player position
     PLAYER.position = vec2(1.5, 1.5)
@@ -105,8 +107,8 @@ def nextLevel():
 
     # Level up
     LEVEL += 1
-    if LEVEL > 10:
-        pass
+    if LEVEL > MAXIMUM_LEVEL:
+        ACTIVE = False
 
 def timeBoost():
     global COUNTDOWN
@@ -129,8 +131,8 @@ def init():
 
     # Generate the world
     WORLD.fill()
-    WORLD.grid = generateMaze(WORLD.grid, 100)
-    WORLD.getSquare(WORLD.dimensions.subtract(1, 2)).setOccupation(polygon('finish', boundingbox(0.1), (0, 255, 0)))
+    WORLD.grid = generateMaze(WORLD.grid, 0)
+    WORLD.getSquare(vec2(WORLD.dimensions.x - 1, WORLD.dimensions.y - 2)).setOccupation(polygon('finish', boundingbox(0.1), (0, 255, 0)))
 
     # Define intercepts as an array
     global INTERCEPTS, VISIBLE_INTERCEPTS
@@ -168,11 +170,12 @@ def keystrokeHandler():
         if key[pygame.K_s]:
             velocity.y += 0.008
         if key[pygame.K_LSHIFT]:
-            velocity = velocity.multiply(1.5, 1.5)
+            velocity.multiply(1.5, 1.5)
 
         # Gets a new vector based on difference between the player's yaw and applied velocity. Required for directional movement, and PI/2 there to offset 90 degrees
-        relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2)).multiply(TICK_RATIO, TICK_RATIO)
-        PLAYER.velocity = PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
+        relative_velocity = velocity.relative(PLAYER.yaw.subtract(math.atan2(velocity.y, velocity.x) + PI/2))
+        relative_velocity.multiply(TICK_RATIO, TICK_RATIO)
+        PLAYER.velocity.add(relative_velocity.x, relative_velocity.y)
 
     if key[pygame.K_LEFT]:
         PLAYER.yaw = PLAYER.yaw.add((PI/180) * 3 * TICK_RATIO)
@@ -204,7 +207,9 @@ def entityHandler():
     # Player updates
     RAYS = list(reversed(PLAYER.raycast(RENDER_DISTANCE, RENDER_RESOLUTION)))
     DRAW_QUEUE.append(illustration('circle', ((255, 255, 0), MINIMAP.relative(PLAYER.position, WORLD_DIMENSIONS).display(), PLAYER.boundingbox.radius)), MINIMAP_PRIORITY + 5)
-    next_square =  WORLD.getSquare(PLAYER.position.add(PLAYER.velocity.x, PLAYER.velocity.y).floor())
+    next_position = vec2(PLAYER.position.x + PLAYER.velocity.x, PLAYER.position.y + PLAYER.velocity.y)
+    next_position.floor()
+    next_square =  WORLD.getSquare(next_position)
 
     try:
         if next_square.occupation.type == 'wall':
@@ -220,6 +225,7 @@ def entityHandler():
 
     PLAYER.tick()
 
+@profile
 def gfxHandler():
     if not ACTIVE:
         return
@@ -232,7 +238,7 @@ def gfxHandler():
     '''
     for raycast_index in range(len(RAYS)):
         raycast = RAYS[raycast_index]
-        squares = WORLD.getAdjacentSquares(PLAYER.position.floor(), LOAD_DISTANCE)
+        squares = WORLD.getAdjacentSquares(vec2(math.floor(PLAYER.position.x), math.floor(PLAYER.position.y)), LOAD_DISTANCE)
         INTERCEPTS.append({
             'parent': [],
             'intercept': [],
@@ -249,7 +255,7 @@ def gfxHandler():
                 continue
 
             for direction, boundary in square.occupation.boundingbox.boundaries.items():
-                boundary_offset = boundary.offset(square.position.add(0.5, 0.5))
+                boundary_offset = boundary.offset(vec2(square.position.x + 0.5, square.position.y + 0.5))
                 intercept = raycast.intercept(boundary_offset)
 
                 if intercept is None:
@@ -308,8 +314,8 @@ def gfxHandler():
         DRAW_QUEUE.append(illustration('rectangle', ((colour[0] * colour_multiplier[0] * distance_multiplier, colour[1] * colour_multiplier[1] * distance_multiplier, colour[2] * colour_multiplier[2] * distance_multiplier), wall)), PERSPECTIVE_PRIORITY)
 
         
-    '''
-        Draw the minimap.
+    #'''
+    #    Draw the minimap.
 
     ###
     ### INSTEAD OF DOING THIS EVERY TICK, PERHAPS ONLY UPDATE EVERY COUPLE OF SECONDS???
@@ -324,10 +330,10 @@ def gfxHandler():
                 continue
 
             for direction, boundary in square.occupation.boundingbox.boundaries.items():
-                boundary_offset = boundary.offset(square.position.add(square.occupation.boundingbox.radius, square.occupation.boundingbox.radius))
+                boundary_offset = boundary.offset(vec2(square.position.x + 0.5, square.position.y + 0.5))
                 DRAW_QUEUE.append(illustration('line', ((255, 255, 255), MINIMAP.relative(boundary_offset.start, WORLD_DIMENSIONS).display(), MINIMAP.relative(boundary_offset.finish, WORLD_DIMENSIONS).display(), 1)), MINIMAP_PRIORITY + 2)
 
-    '''
+    #'''
         
 
 def interfaceHandler():
@@ -335,13 +341,21 @@ def interfaceHandler():
 
     if ACTIVE:
         countdown = pygame.font.SysFont('Arial Unicode MS', 32).render(f'Time remaining: {COUNTDOWN}', False, (255, 255, 255))
-        level = pygame.font.SysFont('Arial Unicode MS', 32).render(f'Level {LEVEL}', False, (255, 255, 255))
+        level = pygame.font.SysFont('Arial Unicode MS', 32).render(f'Level {LEVEL}/{MAXIMUM_LEVEL}', False, (255, 255, 255))
         WINDOW.blit(countdown, HUD.relative(vec2((WINDOW_DIMENSIONS.x / 2) - (countdown.get_width() / 2), 0), WINDOW_DIMENSIONS).display()) # Center text in HUD
         WINDOW.blit(level, HUD.relative(vec2(WINDOW_DIMENSIONS.x - level.get_width(), 0), WINDOW_DIMENSIONS).display())
 
         #DRAW_QUEUE.append(illustration('rectangle', ((255, 255, 255), pygame.Rect(HUD.position.x, HUD.position.y, HUD.display_dimensions.x, HUD.display_dimensions.y))), MINIMAP_PRIORITY + 1)
         #DRAW_QUEUE.append(illustration('rectangle', ((0, 0, 0), pygame.Rect(MINIMAP.position.x, MINIMAP.position.y, MINIMAP.display_dimensions.x, MINIMAP.display_dimensions.y))), MINIMAP_PRIORITY + 1)
-    pass
+        return
+
+    if LEVEL > MAXIMUM_LEVEL:
+        youwin = pygame.font.SysFont('Arial Unicode MS', 32).render(f'Congrats! You win!', False, (255, 255, 255))
+        WINDOW.blit(youwin, HUD.relative(vec2((WINDOW_DIMENSIONS.x / 2) - (youwin.get_width() / 2), 0), WINDOW_DIMENSIONS).display()) # Center text in HUD
+        return
+    
+    gameover = pygame.font.SysFont('Arial Unicode MS', 32).render(f'Game over! Better luck next time.', False, (255, 255, 255))
+    WINDOW.blit(gameover, HUD.relative(vec2((WINDOW_DIMENSIONS.x / 2) - (gameover.get_width() / 2), 0), WINDOW_DIMENSIONS).display()) # Center text in HUD
 
 def drawHandler():
     global DRAW_QUEUE
@@ -375,29 +389,13 @@ def resetHandler():
 def computation():
     global TICK_RATIO, ACTIVE
     TICK_RATIO = tickRatio()
-
-    current_time = time.time()
     eventHandler()
-    print(f'eventHandler time: {round(time.time() - current_time, 4) * 1000}ms')
-    current_time = time.time()
     keystrokeHandler()
-    print(f'keystrokeHandler time: {round(time.time() - current_time, 4) * 1000}ms')
-    current_time = time.time()
     gameHandler()
-    print(f'gameHandler time: {round(time.time() - current_time, 4) * 1000}ms')
-    current_time = time.time()
     entityHandler()
-    print(f'entityHandler time: {round(time.time() - current_time, 4) * 1000}ms')
-    current_time = time.time()
     gfxHandler()
-    print(f'gfxtHandler time: {round(time.time() - current_time, 4) * 1000}ms')
-    current_time = time.time()
     interfaceHandler()
-    print(f'interfaceHandler time: {round(time.time() - current_time, 4) * 1000}ms')
-    current_time = time.time()
     drawHandler()
-    print(f'drawHandler time: {round(time.time() - current_time, 4) * 1000}ms\n')
-    current_time = time.time()
     resetHandler()
 
 '''
@@ -421,8 +419,7 @@ def tick():
     if time_difference < time_ratio:
         time.sleep(time_ratio - time_difference) # pause execution until the tick is done
     else:
-        pass
-        #warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning, stacklevel=4)
+        warnings.warn(f'Couldn\'t keep up! Running {round(time_difference, 2)}s behind expected interval of {TICK_FREQUENCY} ticks per second. ({int((time_difference * TICK_FREQUENCY) * 100)}% slower)', RuntimeWarning, stacklevel=4)
 
     TICK_RATE = (time_ratio/time_difference) * TICK_FREQUENCY
     
