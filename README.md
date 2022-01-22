@@ -2,6 +2,7 @@
  <h1>Maze Escape</h1>
  <p><i>A 3D raytracing maze simulation written in python</i></p>
  <img src="images/example.png">
+ <p><a href="https://vimeo.com/668858354">(Video demo)</a></p>
 </div>
 
 # Table of contents
